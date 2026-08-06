@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import PicturePicker from '$lib/components/PicturePicker.svelte';
+	import { difficultyIcons, icons, worldIcons } from '$lib/icons';
 	import { DIFFICULTIES, LEVELS_PER_WORLD, WORLDS } from '$lib/game/worlds';
 	import { pickForOrdinal, pool, resolveImage } from '$lib/images/resolve';
 	import { progress } from '$lib/state/progress.svelte';
@@ -50,7 +52,15 @@
 						}}
 						aria-pressed={settings.difficulty === difficulty.id}
 					>
-						<strong>{difficulty.title}</strong>
+						<span class="chip-head">
+							<HugeiconsIcon
+								icon={difficultyIcons[difficulty.id]}
+								size={19}
+								strokeWidth={1.8}
+								color="currentColor"
+							/>
+							<strong>{difficulty.title}</strong>
+						</span>
 						<span class="muted">{difficulty.note}</span>
 					</button>
 				{/each}
@@ -67,7 +77,10 @@
 				</span>
 				<span class="picture-label">
 					{settings.varyPictures ? 'A different one each puzzle' : 'One for every puzzle'}
-					<span class="muted">Add your photos…</span>
+					<span class="muted with-icon">
+						<HugeiconsIcon icon={icons.addPhoto} size={15} strokeWidth={1.8} color="currentColor" />
+						Add your photos…
+					</span>
 				</span>
 			</button>
 		</div>
@@ -77,6 +90,7 @@
 		<div class="row" style="justify-content: space-between">
 			<h2>Worlds</h2>
 			<a class="attic-link" href="{base}/attic">
+				<HugeiconsIcon icon={icons.attic} size={17} strokeWidth={1.8} color="currentColor" />
 				The attic · {progress.totalPieces}/{progress.totalLevels} pieces
 			</a>
 		</div>
@@ -86,7 +100,17 @@
 				{@const open = progress.isWorldOpen(world.id)}
 				{@const pieces = progress.piecesIn(world.id)}
 				<article class="world" class:locked={!open} style="--hue: {world.hue}">
-					<h3>{world.title}</h3>
+					<h3>
+						<span class="world-mark" aria-hidden="true">
+							<HugeiconsIcon
+								icon={worldIcons[world.id]}
+								size={20}
+								strokeWidth={1.9}
+								color="currentColor"
+							/>
+						</span>
+						{world.title}
+					</h3>
 					<p class="flavour">{open ? world.flavour : 'Not yet.'}</p>
 
 					<div class="pips" aria-label="{pieces} of {LEVELS_PER_WORLD} solved">
@@ -118,7 +142,13 @@
 	<footer class="row" style="justify-content: space-between; padding-block: 1rem">
 		<!-- Sound lives in the corner control, on every screen. -->
 		<div class="row">
-			<button class="ghost" onclick={() => settings.toggleReducedMotion()}>
+			<button class="ghost with-icon" onclick={() => settings.toggleReducedMotion()}>
+				<HugeiconsIcon
+					icon={settings.reducedMotion ? icons.motionOff : icons.motionOn}
+					size={17}
+					strokeWidth={1.8}
+					color="currentColor"
+				/>
 				{settings.reducedMotion ? 'Less movement' : 'Full movement'}
 			</button>
 		</div>
@@ -181,6 +211,24 @@
 		text-align: left;
 	}
 
+	.chip-head {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	/* The icon only takes the world's colour once its chip is chosen, so the
+	   selected difficulty reads at a glance rather than only by its border. */
+	.chip :global(svg) {
+		opacity: 0.6;
+		transition: opacity 0.25s var(--ease-out);
+	}
+
+	.chip.on :global(svg) {
+		opacity: 1;
+		color: var(--warm-200);
+	}
+
 	.chip.on {
 		border-color: var(--warm-200);
 		background: linear-gradient(hsl(34 40% 32%), hsl(30 38% 22%));
@@ -228,6 +276,9 @@
 	}
 
 	.attic-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
 		text-decoration: none;
 		border-bottom: 1px solid currentColor;
 		padding-bottom: 2px;
@@ -266,7 +317,30 @@
 	}
 
 	h3 {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
 		font-size: 1.4rem;
+	}
+
+	/* The world's icon sits in a tinted disc, so each world is identifiable
+	   before you have read a word of it. */
+	.world-mark {
+		display: grid;
+		place-items: center;
+		width: 38px;
+		height: 38px;
+		flex: none;
+		border-radius: 50%;
+		color: hsl(var(--hue) 85% 76%);
+		background: hsl(var(--hue) 45% 26% / 0.85);
+		box-shadow: inset 0 0 0 1px hsl(var(--hue) 60% 66% / 0.35);
+	}
+
+	.world.locked .world-mark {
+		color: var(--ink);
+		background: hsl(var(--hue) 10% 24% / 0.7);
+		box-shadow: none;
 	}
 
 	.pips {

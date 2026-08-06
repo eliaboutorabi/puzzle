@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import * as sfx from '$lib/audio/sfx';
 	import Board from '$lib/components/Board.svelte';
+	import { icons } from '$lib/icons';
 	import { formatTime, Session } from '$lib/game/session.svelte';
 	import { LEVELS_PER_WORLD, difficultyById, levelOrdinal, worldById } from '$lib/game/worlds';
 	import { imageForOrdinal, randomGalleryId, resolveImage } from '$lib/images/resolve';
@@ -170,7 +172,10 @@
 
 <div class="shell play" style="--hue: {world.hue}">
 	<header class="bar">
-		<a class="back" href="{base}/">← Worlds</a>
+		<a class="back with-icon" href="{base}/">
+			<HugeiconsIcon icon={icons.back} size={17} strokeWidth={1.8} color="currentColor" />
+			Worlds
+		</a>
 		<div class="title">
 			<h1>{world.title}</h1>
 			<p class="flavour">{world.flavour}</p>
@@ -201,19 +206,23 @@
 				oncontextmenu={(event) => event.preventDefault()}
 				disabled={!session.canRewind}
 			>
-				<span class="glyph" aria-hidden="true">◀◀</span>
+				<HugeiconsIcon icon={icons.unwind} size={19} strokeWidth={1.9} color="currentColor" />
 				Hold to unwind
 			</button>
 
 			<button
-				class="ghost"
+				class="ghost with-icon"
 				onclick={() => session?.useHint()}
 				disabled={session.hintsLeft === 0 || session.phase === 'solved'}
 			>
+				<HugeiconsIcon icon={icons.hint} size={18} strokeWidth={1.8} color="currentColor" />
 				Hint {session.hintsLeft < 0 ? '' : `(${session.hintsLeft})`}
 			</button>
 
-			<button class="ghost" onclick={restart}>Start over</button>
+			<button class="ghost with-icon" onclick={restart}>
+				<HugeiconsIcon icon={icons.restart} size={17} strokeWidth={1.8} color="currentColor" />
+				Start over
+			</button>
 
 			<span class="muted keys">
 				{#if world.mode === 'turn'}
@@ -238,10 +247,19 @@
 					</p>
 					<div class="row" style="justify-content: center; margin-top: 0.9rem">
 						{#if nextLevel !== null}
-							<a class="cta" href="{base}/play?world={world.id}&level={nextLevel}">Next</a>
+							<a class="cta with-icon" href="{base}/play?world={world.id}&level={nextLevel}">
+								Next
+								<HugeiconsIcon icon={icons.next} size={18} strokeWidth={1.9} color="currentColor" />
+							</a>
 						{/if}
-						<a class="cta ghost-link" href="{base}/attic">The attic</a>
-						<button class="ghost" onclick={restart}>Again</button>
+						<a class="cta ghost-link with-icon" href="{base}/attic">
+							<HugeiconsIcon icon={icons.attic} size={17} strokeWidth={1.8} color="currentColor" />
+							The attic
+						</a>
+						<button class="ghost with-icon" onclick={restart}>
+							<HugeiconsIcon icon={icons.restart} size={17} strokeWidth={1.8} color="currentColor" />
+							Again
+						</button>
 					</div>
 				</div>
 			</div>
@@ -339,9 +357,14 @@
 		box-shadow: 0 0 34px -6px hsl(208 80% 60% / 0.8);
 	}
 
-	.rewind .glyph {
-		letter-spacing: -0.15em;
-		opacity: 0.85;
+	/* The rewind glyph runs backward while time does. */
+	.rewind.active :global(svg) {
+		animation: unwinding 0.7s linear infinite;
+	}
+
+	@keyframes unwinding {
+		from { translate: 2px 0; }
+		to { translate: -2px 0; }
 	}
 
 	kbd {

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import * as sfx from '$lib/audio/sfx';
+	import { icons, worldIcons } from '$lib/icons';
 	import { LEVELS_PER_WORLD, WORLDS, levelOrdinal } from '$lib/game/worlds';
 	import { pickForOrdinal, pool, resolveImage } from '$lib/images/resolve';
 	import { progress } from '$lib/state/progress.svelte';
@@ -44,7 +46,10 @@
 
 <div class="shell stack" style="gap: 1.8rem">
 	<header class="row" style="justify-content: space-between">
-		<a class="back" href="{base}/">← Worlds</a>
+		<a class="back with-icon" href="{base}/">
+			<HugeiconsIcon icon={icons.back} size={17} strokeWidth={1.8} color="currentColor" />
+			Worlds
+		</a>
 		<p class="muted tabular">{progress.totalPieces} of {progress.totalLevels} pieces</p>
 	</header>
 
@@ -80,11 +85,20 @@
 				</div>
 
 				<div class="caption">
-					<strong>{world.title}</strong>
+					<strong class="with-icon">
+						<HugeiconsIcon
+							icon={worldIcons[world.id]}
+							size={17}
+							strokeWidth={1.8}
+							color="currentColor"
+						/>
+						{world.title}
+					</strong>
 					<span class="muted">{pieces}/{LEVELS_PER_WORLD}</span>
 				</div>
 
-				<button class="ghost small" onclick={() => hangCurrent(world.id)}>
+				<button class="ghost small with-icon" onclick={() => hangCurrent(world.id)}>
+					<HugeiconsIcon icon={icons.hang} size={16} strokeWidth={1.8} color="currentColor" />
 					Hang my picture here
 				</button>
 			</article>
@@ -97,11 +111,12 @@
 		</p>
 		<div class="row">
 			<button
-				class="ghost"
+				class="ghost with-icon danger"
 				onclick={() => {
 					if (confirm('Forget every solved level and start the attic empty?')) progress.reset();
 				}}
 			>
+				<HugeiconsIcon icon={icons.remove} size={16} strokeWidth={1.8} color="currentColor" />
 				Empty the attic
 			</button>
 		</div>
@@ -201,6 +216,13 @@
 	.small {
 		font-size: 0.85rem;
 		padding: 0.45em 0.9em;
+	}
+
+	/* Emptying the attic throws away every solved level, so it should not look
+	   like the button next to it. */
+	.danger:hover {
+		color: #f0a58f;
+		border-color: #f0a58f5c;
 	}
 
 	/* When the last piece lands, the whole room warms up. */

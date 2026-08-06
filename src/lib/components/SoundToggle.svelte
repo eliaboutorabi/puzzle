@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import * as sfx from '$lib/audio/sfx';
+	import { icons } from '$lib/icons';
 	import { settings } from '$lib/state/settings.svelte';
 
 	/**
@@ -27,14 +29,12 @@
 		title={settings.muted ? 'Turn sound on' : 'Turn all sound off'}
 		aria-label={settings.muted ? 'Turn sound on' : 'Turn all sound off'}
 	>
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" />
-			{#if settings.muted}
-				<path class="stroke" d="M16 9.5l5 5M21 9.5l-5 5" />
-			{:else}
-				<path class="stroke" d="M15.6 8.8a4.5 4.5 0 0 1 0 6.4M18.3 6.4a8 8 0 0 1 0 11.2" />
-			{/if}
-		</svg>
+		<HugeiconsIcon
+			icon={settings.muted ? icons.soundOff : icons.soundOn}
+			size={21}
+			strokeWidth={1.8}
+			color="currentColor"
+		/>
 	</button>
 
 	<button
@@ -46,14 +46,11 @@
 		title={settings.music ? 'Turn the music off' : 'Turn the music on'}
 		aria-label={settings.music ? 'Turn the music off' : 'Turn the music on'}
 	>
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path class="stroke" d="M9 17.5V5.5l10-2v12" />
-			<circle cx="6.5" cy="17.5" r="2.6" />
-			<circle cx="16.5" cy="15.5" r="2.6" />
-			{#if !settings.music}
-				<path class="stroke slash" d="M3.5 20.5L20.5 3.5" />
-			{/if}
-		</svg>
+		<!-- The set has no struck-through music note, so the strike is drawn here
+		     rather than settling for a merely dimmed icon. -->
+		<span class="glyph" class:struck={!settings.music}>
+			<HugeiconsIcon icon={icons.music} size={21} strokeWidth={1.8} color="currentColor" />
+		</span>
 	</button>
 </div>
 
@@ -97,28 +94,28 @@
 		transform: scale(0.92);
 	}
 
-	/* Off reads as dimmed and struck through, not merely as a different icon. */
+	/* Off reads as dimmed, not merely as a different icon. */
 	.icon.off {
 		opacity: 0.42;
 		color: var(--ink);
 	}
 
-	svg {
-		width: 21px;
-		height: 21px;
-		fill: currentColor;
-		overflow: visible;
+	.glyph {
+		position: relative;
+		display: grid;
+		place-items: center;
 	}
 
-	.stroke {
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.9;
-		stroke-linecap: round;
-	}
-
-	.slash {
-		stroke-width: 2.1;
+	.glyph.struck::after {
+		content: '';
+		position: absolute;
+		left: -2px;
+		right: -2px;
+		top: 50%;
+		height: 1.8px;
+		border-radius: 2px;
+		background: currentColor;
+		rotate: -45deg;
 	}
 
 	@media (max-width: 520px) {

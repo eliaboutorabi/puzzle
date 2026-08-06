@@ -182,6 +182,18 @@ button.ghost {
 	flex-wrap: wrap;
 }
 
+/* Any control pairing an icon with a label. Keeps the two optically aligned
+   and stops the icon shrinking when the label wraps. */
+.with-icon {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45em;
+}
+
+.with-icon svg {
+	flex: none;
+}
+
 .shell {
 	position: relative;
 	z-index: 2;

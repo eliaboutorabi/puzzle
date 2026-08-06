@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import * as sfx from '$lib/audio/sfx';
+	import { icons } from '$lib/icons';
 	import { PhotoError, preparePhoto } from '$lib/images/process';
 	import { allChoices, forget, type Choice } from '$lib/images/resolve';
 	import { deletePhoto, savePhoto } from '$lib/images/store';
@@ -66,11 +68,15 @@
 			<h2>The pictures</h2>
 			<p class="muted">Your photos stay on this device. Nothing is uploaded anywhere.</p>
 		</div>
-		<button class="ghost" onclick={onclose}>Close</button>
+		<button class="ghost with-icon" onclick={onclose}>
+			<HugeiconsIcon icon={icons.close} size={17} strokeWidth={1.8} color="currentColor" />
+			Close
+		</button>
 	</header>
 
 	<div class="row">
-		<button class="primary" onclick={() => input?.click()} disabled={busy}>
+		<button class="primary with-icon" onclick={() => input?.click()} disabled={busy}>
+			<HugeiconsIcon icon={icons.addPhoto} size={18} strokeWidth={1.8} color="currentColor" />
 			{busy ? 'Painting it…' : 'Add one of your photos'}
 		</button>
 		<input
@@ -93,7 +99,15 @@
 		}}
 		aria-pressed={settings.varyPictures}
 	>
-		<strong>A different picture for every puzzle</strong>
+		<span class="mode-head">
+			<HugeiconsIcon
+				icon={settings.varyPictures ? icons.vary : icons.hang}
+				size={19}
+				strokeWidth={1.8}
+				color="currentColor"
+			/>
+			<strong>A different picture for every puzzle</strong>
+		</span>
 		<span class="muted">
 			{settings.varyPictures
 				? 'On — each puzzle draws its own, your photos first.'
@@ -116,7 +130,7 @@
 				</button>
 				{#if choice.own}
 					<button class="remove" onclick={() => remove(choice)} aria-label="Remove {choice.title}">
-						×
+						<HugeiconsIcon icon={icons.remove} size={15} strokeWidth={1.9} color="currentColor" />
 					</button>
 				{/if}
 			</div>
@@ -212,11 +226,22 @@
 		right: -6px;
 		width: 30px;
 		height: 30px;
+		display: grid;
+		place-items: center;
 		padding: 0;
-		line-height: 1;
-		font-size: 1.1rem;
 		border-radius: 50%;
 		background: var(--dusk-200);
+		color: var(--ink);
+	}
+
+	.remove:hover {
+		color: #f0a58f;
+	}
+
+	.mode-head {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.error {
