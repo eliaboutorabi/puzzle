@@ -188,6 +188,8 @@ button.ghost {
 	max-width: 1080px;
 	margin: 0 auto;
 	padding: clamp(1.2rem, 4vw, 2.6rem);
+	/* Room for the floating sound control so it never sits on top of content. */
+	padding-bottom: calc(clamp(1.2rem, 4vw, 2.6rem) + 4rem);
 }
 
 .muted {

@@ -9,7 +9,10 @@ interface Shape {
 	music: boolean;
 	difficulty: DifficultyId;
 	reducedMotion: boolean;
+	/** The pinned picture, used only when `varyPictures` is off. */
 	imageId: string;
+	/** Give every puzzle its own picture instead of repeating one. */
+	varyPictures: boolean;
 }
 
 const DEFAULTS: Shape = {
@@ -17,7 +20,8 @@ const DEFAULTS: Shape = {
 	music: true,
 	difficulty: 'gentle',
 	reducedMotion: false,
-	imageId: 'long-afternoon'
+	imageId: 'long-afternoon',
+	varyPictures: true
 };
 
 function load(): Shape {
@@ -48,6 +52,9 @@ class Settings {
 	get imageId() {
 		return this.#state.imageId;
 	}
+	get varyPictures() {
+		return this.#state.varyPictures;
+	}
 
 	toggleMuted() {
 		this.#state.muted = !this.#state.muted;
@@ -71,8 +78,15 @@ class Settings {
 		this.#save();
 	}
 
+	/** Pinning a picture is what turns the per-puzzle variety off. */
 	setImage(imageId: string) {
 		this.#state.imageId = imageId;
+		this.#state.varyPictures = false;
+		this.#save();
+	}
+
+	varyEveryPuzzle() {
+		this.#state.varyPictures = true;
 		this.#save();
 	}
 

@@ -2,17 +2,25 @@
 	import { base } from '$app/paths';
 	import PicturePicker from '$lib/components/PicturePicker.svelte';
 	import { DIFFICULTIES, LEVELS_PER_WORLD, WORLDS } from '$lib/game/worlds';
-	import { resolveImage } from '$lib/images/resolve';
+	import { pickForOrdinal, pool, resolveImage } from '$lib/images/resolve';
 	import { progress } from '$lib/state/progress.svelte';
 	import { settings } from '$lib/state/settings.svelte';
 	import * as sfx from '$lib/audio/sfx';
 
 	let picking = $state(false);
-	let preview = $state('');
+	/** Three thumbnails when pictures vary, one when a picture is pinned. */
+	let previews = $state<string[]>([]);
 
 	$effect(() => {
-		const id = settings.imageId;
-		resolveImage(id).then((url) => (preview = url));
+		if (settings.varyPictures) {
+			pool().then(async (ids) => {
+				previews = await Promise.all(
+					[0, 1, 2].map((ordinal) => resolveImage(pickForOrdinal(ids, ordinal)))
+				);
+			});
+		} else {
+			resolveImage(settings.imageId).then((url) => (previews = [url]));
+		}
 	});
 </script>
 
@@ -50,12 +58,17 @@
 		</div>
 
 		<div class="stack" style="gap: 0.7rem">
-			<h2>Which picture?</h2>
+			<h2>Which pictures?</h2>
 			<button class="picture" onclick={() => (picking = true)}>
-				{#if preview}
-					<img src={preview} alt="" />
-				{/if}
-				<span>Choose or upload…</span>
+				<span class="stack-thumbs">
+					{#each previews as preview, index (index)}
+						<img src={preview} alt="" style="--i: {index}" />
+					{/each}
+				</span>
+				<span class="picture-label">
+					{settings.varyPictures ? 'A different one each puzzle' : 'One for every puzzle'}
+					<span class="muted">Add your photos…</span>
+				</span>
 			</button>
 		</div>
 	</section>
@@ -103,15 +116,10 @@
 	</section>
 
 	<footer class="row" style="justify-content: space-between; padding-block: 1rem">
+		<!-- Sound lives in the corner control, on every screen. -->
 		<div class="row">
-			<button class="ghost" onclick={() => settings.toggleMuted()}>
-				{settings.muted ? 'Sound off' : 'Sound on'}
-			</button>
-			<button class="ghost" onclick={() => settings.toggleMusic()}>
-				{settings.music ? 'Music on' : 'Music off'}
-			</button>
 			<button class="ghost" onclick={() => settings.toggleReducedMotion()}>
-				{settings.reducedMotion ? 'Still' : 'Moving'}
+				{settings.reducedMotion ? 'Less movement' : 'Full movement'}
 			</button>
 		</div>
 		<p class="muted">Photos never leave your device.</p>
@@ -152,7 +160,7 @@
 
 	@media (min-width: 760px) {
 		.setup {
-			grid-template-columns: 1.4fr 1fr;
+			grid-template-columns: 1fr 1fr;
 			align-items: start;
 		}
 	}
@@ -188,12 +196,35 @@
 		padding: 0.6rem;
 	}
 
+	/* Overlapping thumbnails, so "several pictures" is legible at a glance. */
+	.stack-thumbs {
+		display: flex;
+		flex: none;
+		padding-right: calc(var(--overlap, 22px));
+	}
+
 	.picture img {
-		width: 66px;
-		height: 66px;
+		width: 54px;
+		height: 54px;
 		object-fit: cover;
 		border-radius: 10px;
 		flex: none;
+		border: 2px solid hsl(var(--hue, 34) 16% 14%);
+		margin-right: -22px;
+		transform: rotate(calc((var(--i) - 1) * 3deg));
+		transition: transform 0.35s var(--ease-spring);
+	}
+
+	.picture:hover img {
+		transform: rotate(calc((var(--i) - 1) * 6deg)) translateY(-2px);
+	}
+
+	.picture-label {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.3;
+		min-width: 0;
+		font-size: 0.95rem;
 	}
 
 	.attic-link {

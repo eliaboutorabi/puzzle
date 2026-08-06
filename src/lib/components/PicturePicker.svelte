@@ -63,7 +63,7 @@
 <div class="sheet" role="dialog" aria-modal="true" aria-label="Choose a picture">
 	<header class="row" style="justify-content: space-between">
 		<div>
-			<h2>The picture</h2>
+			<h2>The pictures</h2>
 			<p class="muted">Your photos stay on this device. Nothing is uploaded anywhere.</p>
 		</div>
 		<button class="ghost" onclick={onclose}>Close</button>
@@ -71,7 +71,7 @@
 
 	<div class="row">
 		<button class="primary" onclick={() => input?.click()} disabled={busy}>
-			{busy ? 'Painting it…' : 'Use one of your photos'}
+			{busy ? 'Painting it…' : 'Add one of your photos'}
 		</button>
 		<input
 			bind:this={input}
@@ -83,15 +83,33 @@
 		{#if error}<span class="error">{error}</span>{/if}
 	</div>
 
+	<!-- Choosing a picture pins it everywhere, so there has to be a way back. -->
+	<button
+		class="mode"
+		class:on={settings.varyPictures}
+		onclick={() => {
+			settings.varyEveryPuzzle();
+			sfx.playUi();
+		}}
+		aria-pressed={settings.varyPictures}
+	>
+		<strong>A different picture for every puzzle</strong>
+		<span class="muted">
+			{settings.varyPictures
+				? 'On — each puzzle draws its own, your photos first.'
+				: 'Off — every puzzle uses the one picture you picked below.'}
+		</span>
+	</button>
+
 	<div class="grid">
 		{#each choices as choice (choice.id)}
 			<div class="cell">
 				<button
 					class="pick"
-					class:chosen={settings.imageId === choice.id}
+					class:chosen={!settings.varyPictures && settings.imageId === choice.id}
 					onclick={() => choose(choice)}
-					aria-label="Use {choice.title}"
-					aria-pressed={settings.imageId === choice.id}
+					aria-label="Use {choice.title} for every puzzle"
+					aria-pressed={!settings.varyPictures && settings.imageId === choice.id}
 				>
 					<img src={choice.url} alt="" loading="lazy" />
 					<span class="label">{choice.title}</span>
@@ -204,5 +222,20 @@
 	.error {
 		color: #f0a58f;
 		font-size: 0.9rem;
+	}
+
+	.mode {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+		text-align: left;
+		width: 100%;
+	}
+
+	.mode.on {
+		border-color: var(--warm-200);
+		background: linear-gradient(hsl(34 40% 30%), hsl(30 38% 20%));
+		box-shadow: 0 0 30px -10px hsl(34 80% 60% / 0.6);
 	}
 </style>

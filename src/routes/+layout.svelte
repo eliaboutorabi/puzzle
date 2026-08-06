@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '$lib/styles/app.css';
 	import * as sfx from '$lib/audio/sfx';
+	import SoundToggle from '$lib/components/SoundToggle.svelte';
 	import { settings } from '$lib/state/settings.svelte';
 
 	let { children } = $props();
@@ -19,3 +20,5 @@
 <svelte:window onpointerdown={wakeAudio} onkeydown={wakeAudio} />
 
 {@render children()}
+
+<SoundToggle />

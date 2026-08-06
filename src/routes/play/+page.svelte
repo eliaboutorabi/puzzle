@@ -4,8 +4,8 @@
 	import * as sfx from '$lib/audio/sfx';
 	import Board from '$lib/components/Board.svelte';
 	import { formatTime, Session } from '$lib/game/session.svelte';
-	import { LEVELS_PER_WORLD, difficultyById, worldById } from '$lib/game/worlds';
-	import { randomGalleryId, resolveImage } from '$lib/images/resolve';
+	import { LEVELS_PER_WORLD, difficultyById, levelOrdinal, worldById } from '$lib/game/worlds';
+	import { imageForOrdinal, randomGalleryId, resolveImage } from '$lib/images/resolve';
 	import { progress } from '$lib/state/progress.svelte';
 	import { settings } from '$lib/state/settings.svelte';
 
@@ -44,10 +44,19 @@
 		return () => next.destroy();
 	});
 
-	// Mystery worlds pull a picture the player did not pick, and do not show it.
+	/**
+	 * Each puzzle gets its own picture, walked from the pool by the level's
+	 * ordinal — unless the player has pinned one. Mystery worlds ignore both and
+	 * pull something unseen, since the whole point is not knowing.
+	 */
 	$effect(() => {
-		const id = world.mystery ? randomGalleryId(settings.imageId) : settings.imageId;
-		resolveImage(id).then((url) => (imageUrl = url));
+		if (world.mystery) {
+			resolveImage(randomGalleryId(settings.imageId)).then((url) => (imageUrl = url));
+		} else if (settings.varyPictures) {
+			imageForOrdinal(levelOrdinal(world.id, level)).then((url) => (imageUrl = url));
+		} else {
+			resolveImage(settings.imageId).then((url) => (imageUrl = url));
+		}
 	});
 
 	$effect(() => {

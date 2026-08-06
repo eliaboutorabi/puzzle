@@ -147,3 +147,9 @@ export const LEVELS_PER_WORLD = 3;
 export function levelKey(world: WorldId, level: number): string {
 	return `${world}:${level}`;
 }
+
+/** A level's position in the whole game, used to give each puzzle its own picture. */
+export function levelOrdinal(world: WorldId, level: number): number {
+	const index = Math.max(0, WORLDS.findIndex((entry) => entry.id === world));
+	return index * LEVELS_PER_WORLD + level;
+}

@@ -63,3 +63,30 @@ export function randomGalleryId(exclude?: string): string {
 	const options = GALLERY.filter((painting) => painting.id !== exclude);
 	return options[Math.floor(Math.random() * options.length)].id;
 }
+
+/**
+ * Every id available to draw a puzzle from, uploads first.
+ *
+ * Photos lead so that someone who has added their own pictures sees them
+ * immediately rather than after cycling through six paintings.
+ */
+export async function pool(): Promise<string[]> {
+	const photos = await listPhotos();
+	return [...photos.map((photo) => photo.id), ...GALLERY.map((painting) => painting.id)];
+}
+
+/**
+ * The picture for one puzzle. Walking the pool by the level's ordinal means
+ * consecutive puzzles never repeat, every picture gets used before any is
+ * reused, and the assignment is stable — the same level always looks the same,
+ * which is what lets a best-move record mean anything.
+ */
+export function pickForOrdinal(ids: string[], ordinal: number): string {
+	if (ids.length === 0) return GALLERY[0].id;
+	return ids[((ordinal % ids.length) + ids.length) % ids.length];
+}
+
+/** Resolve straight to a URL for a given puzzle ordinal. */
+export async function imageForOrdinal(ordinal: number): Promise<string> {
+	return resolveImage(pickForOrdinal(await pool(), ordinal));
+}

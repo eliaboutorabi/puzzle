@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import * as sfx from '$lib/audio/sfx';
-	import { LEVELS_PER_WORLD, WORLDS } from '$lib/game/worlds';
-	import { resolveImage } from '$lib/images/resolve';
+	import { LEVELS_PER_WORLD, WORLDS, levelOrdinal } from '$lib/game/worlds';
+	import { pickForOrdinal, pool, resolveImage } from '$lib/images/resolve';
 	import { progress } from '$lib/state/progress.svelte';
 	import { settings } from '$lib/state/settings.svelte';
 
@@ -13,13 +13,23 @@
 	 */
 	let urls = $state<Record<string, string>>({});
 
+	// An easel shows whatever was hung on it, and otherwise the same picture as
+	// that world's first puzzle — so the attic matches what you actually played.
 	$effect(() => {
-		for (const world of WORLDS) {
-			const id = progress.easelFor(world.id) ?? settings.imageId;
-			resolveImage(id).then((url) => {
-				urls = { ...urls, [world.id]: url };
-			});
-		}
+		const vary = settings.varyPictures;
+		const pinned = settings.imageId;
+
+		pool().then(async (ids) => {
+			const resolved = await Promise.all(
+				WORLDS.map(async (world) => {
+					const hung = progress.easelFor(world.id);
+					const id =
+						hung ?? (vary ? pickForOrdinal(ids, levelOrdinal(world.id, 0)) : pinned);
+					return [world.id, await resolveImage(id)] as const;
+				})
+			);
+			urls = Object.fromEntries(resolved);
+		});
 	});
 
 	const complete = $derived(progress.totalPieces === progress.totalLevels);
@@ -83,7 +93,7 @@
 
 	<footer class="stack" style="gap: 0.6rem; padding-block: 1.5rem">
 		<p class="muted">
-			Every easel shows whichever picture you last chose, unless you hang a different one.
+			Each easel shows that world's own picture, unless you hang a different one.
 		</p>
 		<div class="row">
 			<button
