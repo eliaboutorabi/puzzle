@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<defs>
+		<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0" stop-color="#f6d9a0" />
+			<stop offset="1" stop-color="#d98b62" />
+		</linearGradient>
+	</defs>
+	<rect width="64" height="64" rx="14" fill="#211a1c" />
+	<rect x="6" y="6" width="52" height="52" rx="10" fill="url(#sky)" />
+	<circle cx="40" cy="24" r="7" fill="#fff6dd" />
+	<path d="M6 44c9-7 15-7 24-1s16 6 28 0v15H6z" fill="#8f6350" />
+	<path d="M6 52c10-5 17-4 26 1s18 3 26-2v7H6z" fill="#3b2f30" />
+	<!-- The rewind mark: two arrows running backward through the light. -->
+	<path d="M31 20 22 26l9 6zM21 20 12 26l9 6z" fill="#211a1c" opacity="0.72" />
+</svg>

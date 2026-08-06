@@ -1,0 +1,210 @@
+/* Warm, painted, slightly out of focus. Everything here is dusk-coloured. */
+
+:root {
+	--ink: #f4e6cf;
+	--ink-soft: #cdb59a;
+	--paper: #211a1c;
+
+	--warm-100: #fbeacc;
+	--warm-200: #f0cf9c;
+	--warm-300: #dda86c;
+	--warm-400: #bf7f4f;
+	--warm-500: #8a5738;
+
+	--dusk-100: #6b5a63;
+	--dusk-200: #4a3d48;
+	--dusk-300: #342b34;
+	--dusk-400: #241e26;
+
+	--glow: #7fe0a8;
+
+	--hue: 38;
+	--world-light: hsl(var(--hue) 74% 66%);
+	--world-deep: hsl(var(--hue) 40% 22%);
+
+	--radius: 14px;
+	--radius-lg: 24px;
+
+	--shadow-soft: 0 18px 50px -22px rgba(0, 0, 0, 0.85);
+	--shadow-lift: 0 26px 60px -20px rgba(0, 0, 0, 0.9);
+
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+}
+
+body {
+	background: var(--paper);
+	color: var(--ink);
+	/* No webfont: a bookish system serif keeps the site self-contained and instant. */
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+	font-size: 17px;
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+	overflow-x: hidden;
+}
+
+/* The whole game sits under a slow, warm wash of light. */
+body::before {
+	content: '';
+	position: fixed;
+	inset: -20vmax;
+	pointer-events: none;
+	z-index: 0;
+	background:
+		radial-gradient(45vmax 45vmax at 22% 18%, hsl(var(--hue) 60% 40% / 0.42), transparent 65%),
+		radial-gradient(50vmax 50vmax at 82% 78%, hsl(calc(var(--hue) + 40) 45% 32% / 0.34), transparent 68%),
+		radial-gradient(70vmax 70vmax at 50% 110%, #120e12, transparent 70%);
+	filter: blur(20px);
+	animation: drift 34s var(--ease-out) infinite alternate;
+	transition: background 1.2s ease;
+}
+
+/* Paper grain over everything, so flat colour never looks digital. */
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 1;
+	opacity: 0.32;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+@keyframes drift {
+	from {
+		transform: translate3d(-2%, -1%, 0) scale(1);
+	}
+	to {
+		transform: translate3d(2%, 2%, 0) scale(1.08);
+	}
+}
+
+h1,
+h2,
+h3 {
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	margin: 0;
+}
+
+h1 {
+	font-size: clamp(2.4rem, 7vw, 4.2rem);
+	line-height: 1.05;
+}
+
+p {
+	margin: 0;
+}
+
+a {
+	color: var(--warm-200);
+}
+
+.flavour {
+	font-style: italic;
+	color: var(--warm-200);
+	opacity: 0.85;
+}
+
+/* Buttons feel pressable: they lift on hover and sink on press. */
+button {
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	border: 1px solid hsl(var(--hue) 30% 62% / 0.28);
+	border-radius: var(--radius);
+	background: linear-gradient(hsl(var(--hue) 22% 26% / 0.9), hsl(var(--hue) 24% 18% / 0.9));
+	padding: 0.65em 1.2em;
+	box-shadow: var(--shadow-soft);
+	transition:
+		transform 0.22s var(--ease-spring),
+		box-shadow 0.22s var(--ease-out),
+		border-color 0.22s var(--ease-out),
+		background 0.22s var(--ease-out);
+}
+
+button:hover:not(:disabled) {
+	transform: translateY(-2px);
+	border-color: hsl(var(--hue) 60% 70% / 0.55);
+	box-shadow: var(--shadow-lift);
+}
+
+button:active:not(:disabled) {
+	transform: translateY(1px) scale(0.985);
+}
+
+button:disabled {
+	opacity: 0.42;
+	cursor: default;
+}
+
+button.primary {
+	background: linear-gradient(hsl(var(--hue) 62% 58%), hsl(var(--hue) 55% 44%));
+	border-color: hsl(var(--hue) 70% 74% / 0.6);
+	color: #2a1c14;
+	font-weight: 700;
+}
+
+button.ghost {
+	background: hsl(var(--hue) 20% 30% / 0.35);
+	box-shadow: none;
+}
+
+:focus-visible {
+	outline: 2px solid var(--warm-200);
+	outline-offset: 3px;
+	border-radius: 6px;
+}
+
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	flex-wrap: wrap;
+}
+
+.shell {
+	position: relative;
+	z-index: 2;
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: clamp(1.2rem, 4vw, 2.6rem);
+}
+
+.muted {
+	opacity: 0.72;
+	font-size: 0.92rem;
+}
+
+.tabular {
+	font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.06s !important;
+	}
+}
