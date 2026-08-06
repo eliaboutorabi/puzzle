@@ -77,6 +77,8 @@
 		if (!session) return;
 		const { size } = session.board;
 		const empty = session.emptyIndex;
+		// Turn-only boards have no gap to move things into.
+		if (empty < 0) return;
 		const row = Math.floor(empty / size);
 		const col = empty % size;
 
@@ -205,7 +207,12 @@
 			<button class="ghost" onclick={restart}>Start over</button>
 
 			<span class="muted keys">
-				arrows to slide · hold <kbd>R</kbd> to unwind · <kbd>H</kbd> for a hint
+				{#if world.mode === 'turn'}
+					click a piece to turn it
+				{:else}
+					arrows to slide · click a crooked piece to turn it
+				{/if}
+				· hold <kbd>R</kbd> to unwind · <kbd>H</kbd> for a hint
 			</span>
 		</div>
 

@@ -128,7 +128,7 @@ describe('turning', () => {
 });
 
 describe('what a click does', () => {
-	it('prefers sliding when a piece can both slide and turn', () => {
+	it('slides an upright piece that sits beside the gap', () => {
 		const board = shuffle({
 			size: 3,
 			mode: 'both',
@@ -138,8 +138,18 @@ describe('what a click does', () => {
 			random: rng()
 		});
 		for (const position of legalMoves(board)) {
-			expect(actionAt(board, position)).toBe('slide');
+			const upright = board.rotations[board.cells[position]!] % 4 === 0;
+			expect(actionAt(board, position)).toBe(upright ? 'slide' : 'turn');
 		}
+	});
+
+	it('straightens a crooked piece even when it could slide instead', () => {
+		// Otherwise a crooked piece beside the gap could never be straightened.
+		let board = solved(3, 'both');
+		board = turn(board, 5)!.board; // 5 is adjacent to the empty cell at 8
+		expect(canSlide(board, 5)).toBe(true);
+		expect(actionAt(board, 5)).toBe('turn');
+		expect(act(board, 5)!.move.kind).toBe('turn');
 	});
 
 	it('turns pieces that are nowhere near the empty cell', () => {

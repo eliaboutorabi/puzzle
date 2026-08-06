@@ -89,11 +89,23 @@ export function canTurn(board: Board, index: number): boolean {
 }
 
 /**
- * What a click on this cell does. Sliding wins when both are possible: a tile
- * beside the empty cell wants to move into it, and that reads as the more
- * urgent action. Everything else turns.
+ * What a click on this cell does.
+ *
+ * A piece that is visibly facing the wrong way wants straightening, and that
+ * reads as the obvious intent of a click — so turning wins over sliding for a
+ * crooked piece even when it sits beside the empty cell. Otherwise a piece
+ * beside the gap slides into it, and anything else turns.
+ *
+ * The alternative (sliding always wins) meant a crooked piece next to the gap
+ * could not be straightened at all until it was moved away, which is exactly
+ * the kind of hidden rule this game should not have.
  */
 export function actionAt(board: Board, index: number): 'slide' | 'turn' | null {
+	const tile = board.cells[index];
+	if (tile === null || tile === undefined) return null;
+
+	const askew = board.rotations[tile] % 4 !== 0;
+	if (askew && canTurn(board, index)) return 'turn';
 	if (canSlide(board, index)) return 'slide';
 	if (canTurn(board, index)) return 'turn';
 	return null;
