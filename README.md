@@ -8,13 +8,24 @@ attic full of easels where the pieces you earn assemble into paintings.
 
 ## Playing
 
-- **Click a tile** beside the empty square, or use the **arrow keys**
-- **Hold `R`** (or the button) to unwind — every move reverses, and the music
-  plays backward while it does
-- **`H`** for a hint, where the difficulty allows one
+Pieces get out of true in two different ways, and a click does whatever the
+piece under it needs:
 
-Green-glowing tiles are *unmoved*: they sit at home and never slide. The empty
-square has to route around them.
+- **Turning.** A piece facing the wrong way spins a quarter turn clockwise per
+  click. Four clicks bring it back where it started. Some boards have no empty
+  square at all — every piece is present, just pointing the wrong way, and the
+  whole puzzle is finding the right side for each one.
+- **Sliding.** An upright piece beside the empty square slides into it. The
+  **arrow keys** do this too.
+- **Hold `R`** (or the button) to unwind — every move reverses, turns included,
+  and the music plays backward while it does.
+- **`H`** for a hint, where the difficulty allows one.
+
+A crooked piece always wants straightening first, even when it could slide
+instead — otherwise a piece sitting next to the gap could never be turned.
+
+Green-glowing pieces are *unmoved*: time refuses to touch them. They never
+slide and never turn, and everything else has to work around them.
 
 ## Worlds
 
@@ -23,8 +34,9 @@ Each world adds exactly one rule and explains none of it.
 | World | Rule |
 | --- | --- |
 | Beginnings | Plain sliding. Rewind is free. |
-| The Unmoved | Some tiles cannot be moved at all. |
-| Hidden Hours | The picture stays hidden until you finish it. |
+| The Turning | Nothing slides. Every piece is here, facing the wrong way. |
+| The Unmoved | Some pieces cannot be moved at all. |
+| Hidden Hours | Slide and turn together — and the picture stays hidden until you finish. |
 | Hiccups | Time occasionally unwinds a step by itself. |
 
 Difficulty is a separate axis — Gentle (3×3, picture faintly underneath),
@@ -57,8 +69,10 @@ in [`src/lib/game/board.ts`](src/lib/game/board.ts):
 1. **Solvability.** A random permutation of an n-puzzle is unsolvable half the
    time, so the shuffle never permutes — it walks the empty square using the
    same legal moves the player has.
-2. **Reachability with anchors.** Immovable tiles stay at their home index and
+2. **Reachability with anchors.** Immovable pieces stay at their home index and
    the shuffle routes around them, so every board can be walked back to solved.
+3. **Turnability.** Rotation is its own small group: four clicks always return a
+   piece to where it started, so no amount of turning can strand a board.
 
 Both are covered in [`board.test.ts`](src/lib/game/board.test.ts).
 

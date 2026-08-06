@@ -16,14 +16,15 @@
 	});
 </script>
 
-<svelte:head><title>Unwind — a slow sliding puzzle</title></svelte:head>
+<svelte:head><title>Unwind — a slow puzzle about turning things back</title></svelte:head>
 
 <div class="shell stack" style="gap: 2.2rem">
 	<header class="hero">
-		<p class="kicker">A sliding puzzle where nothing is ever lost</p>
+		<p class="kicker">A puzzle where nothing is ever lost</p>
 		<h1>Unwind</h1>
 		<p class="flavour">
-			Hold to run time backward. Some things will not come back with it.
+			Turn the pieces back the way they were. Hold to run time backward — but
+			some things will not come back with it.
 		</p>
 	</header>
 
