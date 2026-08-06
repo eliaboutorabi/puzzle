@@ -1,14 +1,15 @@
 import * as sfx from '$lib/audio/sfx';
 import {
+	act,
+	actionAt,
 	emptyIndex,
 	hint as findHint,
 	homeCount,
 	isSolved,
-	move as applyMove,
 	pickAnchors,
 	seededRandom,
 	shuffle,
-	unmove,
+	undo,
 	type Board,
 	type Move
 } from './board';
@@ -55,7 +56,14 @@ export class Session {
 
 		const random = seededRandom(seed);
 		const anchors = pickAnchors(difficulty.size, world.anchors, random);
-		this.board = shuffle(difficulty.size, difficulty.steps, anchors, random);
+		this.board = shuffle({
+			size: difficulty.size,
+			mode: world.mode,
+			steps: difficulty.steps,
+			anchors,
+			turnRatio: world.turnRatio,
+			random
+		});
 	}
 
 	/** Moves and history are the same thing: rewinding genuinely costs nothing. */
@@ -64,8 +72,14 @@ export class Session {
 	}
 
 	get progress(): number {
-		const total = this.board.size * this.board.size - 1;
+		const cells = this.board.size * this.board.size;
+		const total = this.board.mode === 'turn' ? cells : cells - 1;
 		return total === 0 ? 1 : homeCount(this.board) / total;
+	}
+
+	/** What a click on this cell would do, for cursors and hover affordances. */
+	actionAt(index: number): 'slide' | 'turn' | null {
+		return actionAt(this.board, index);
 	}
 
 	get canRewind(): boolean {
@@ -81,7 +95,7 @@ export class Session {
 	select(index: number): void {
 		if (this.phase === 'solved' || this.rewinding) return;
 
-		const result = applyMove(this.board, index);
+		const result = act(this.board, index);
 		if (!result) {
 			this.#refuse(index);
 			return;
@@ -89,12 +103,22 @@ export class Session {
 
 		if (this.phase === 'ready') this.#begin();
 
+		const before = this.board;
 		this.board = result.board;
 		this.history = [...this.history, result.move];
 		this.hintAt = null;
 
-		// The tile landed on its own square — a small reward, every time.
-		if (result.move.tile === result.move.from) sfx.playHome();
+		// A piece that just came fully to rest — right square, right way up —
+		// earns the bell. Everything else gets the quieter sound.
+		const settledNow =
+			result.move.kind === 'turn'
+				? this.board.rotations[result.move.tile] % 4 === 0 &&
+					this.board.cells[result.move.tile] === result.move.tile
+				: result.move.tile === result.move.from &&
+					this.board.rotations[result.move.tile] % 4 === 0;
+
+		if (settledNow) sfx.playHome();
+		else if (result.move.kind === 'turn') sfx.playTurn(before.rotations[result.move.tile]);
 		else sfx.playSlide(this.progress);
 
 		if (isSolved(this.board)) this.#finish();
@@ -136,7 +160,7 @@ export class Session {
 			this.stopRewind();
 			return;
 		}
-		this.board = unmove(this.board, last);
+		this.board = undo(this.board, last);
 		this.history = this.history.slice(0, -1);
 		sfx.playUnwind();
 	}

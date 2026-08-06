@@ -36,6 +36,15 @@
 		const row = Math.floor(index / size);
 		return `translate(${col * 100}%, ${row * 100}%)`;
 	}
+
+	/**
+	 * The rotation lives on an inner element rather than on the tile itself, so
+	 * the tile's transform stays purely positional and the two animate
+	 * independently — a piece can slide and spin at once without them fighting.
+	 */
+	function spin(tile: number): string {
+		return `rotate(${session.board.rotations[tile] * 90}deg)`;
+	}
 </script>
 
 <div
@@ -53,30 +62,49 @@
 
 	<div class="tiles">
 		{#each placements as entry (entry.tile)}
-			{@const isHome = entry.tile === entry.position}
+			{@const turns = session.board.rotations[entry.tile] % 4}
+			{@const settled = entry.tile === entry.position && turns === 0}
+			{@const askew = turns !== 0}
 			{@const isAnchor = session.board.anchors.has(entry.tile)}
+			{@const action = session.actionAt(entry.position)}
 			<button
 				class="tile"
-				class:home={isHome}
+				class:home={settled}
+				class:askew
+				class:turnable={action === 'turn'}
 				class:anchor={isAnchor}
 				class:hinted={session.hintAt === entry.position}
 				class:refused={session.refusedAt === entry.position}
 				class:hidden
-				style="
-					transform: {place(entry.position)};
-					background-image: {hidden ? 'none' : `url(${imageUrl})`};
-					background-size: {size * 100}% {size * 100}%;
-					background-position: {offset(entry.tile)};
-					--delay: {(entry.tile % 7) * 40}ms;
-				"
+				style="transform: {place(entry.position)}; --delay: {(entry.tile % 7) * 40}ms;"
 				onclick={() => session.select(entry.position)}
 				disabled={session.phase === 'solved'}
 				aria-label={isAnchor
-					? `Tile ${entry.tile + 1}, held still by time`
-					: `Tile ${entry.tile + 1}${isHome ? ', home' : ''}`}
+					? `Piece ${entry.tile + 1}, held still by time`
+					: `Piece ${entry.tile + 1}${settled ? ', settled' : ''}${
+							askew ? `, turned ${turns * 90} degrees — click to turn it` : ''
+						}`}
 			>
-				{#if hidden}
-					<span class="numeral">{entry.tile + 1}</span>
+				<!-- The face carries the picture and the rotation; the button carries
+				     the position. Keeping them apart lets both animate at once. -->
+				<span
+					class="face"
+					style="
+						transform: {spin(entry.tile)};
+						background-image: {hidden ? 'none' : `url(${imageUrl})`};
+						background-size: {size * 100}% {size * 100}%;
+						background-position: {offset(entry.tile)};
+					"
+				>
+					{#if hidden}
+						<!-- Already inside the rotated face, so it turns with the piece
+						     and its angle is the only clue to the piece's orientation. -->
+						<span class="numeral">{entry.tile + 1}</span>
+					{/if}
+				</span>
+
+				{#if action === 'turn'}
+					<span class="turn-mark" aria-hidden="true">⟳</span>
 				{/if}
 				{#if isAnchor}
 					<span class="anchor-mark" aria-hidden="true"></span>
@@ -175,8 +203,8 @@
 		margin: 0;
 		border: none;
 		border-radius: 7px;
-		background-color: var(--dusk-300);
-		background-repeat: no-repeat;
+		background: none;
+		overflow: hidden;
 		box-shadow:
 			inset 0 0 0 1px rgba(0, 0, 0, 0.4),
 			0 6px 14px -8px rgba(0, 0, 0, 0.9);
@@ -189,6 +217,20 @@
 		outline-offset: -3px;
 	}
 
+	/* The picture, and the thing that spins. Slightly oversized so the corners
+	   never cut in as it turns through 45 degrees. */
+	.face {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		border-radius: 7px;
+		background-color: var(--dusk-300);
+		background-repeat: no-repeat;
+		transition: transform 0.42s var(--ease-spring);
+		will-change: transform;
+	}
+
 	.tile:hover:not(:disabled) {
 		filter: brightness(1.09);
 		z-index: 4;
@@ -197,6 +239,43 @@
 	.tile:active:not(:disabled) {
 		transition-duration: 0.08s;
 		filter: brightness(1.14);
+	}
+
+	/* A piece that is facing the wrong way asks to be turned. */
+	.tile.askew {
+		box-shadow:
+			inset 0 0 0 2px hsl(var(--hue) 80% 66% / 0.55),
+			0 6px 18px -8px rgba(0, 0, 0, 0.9);
+	}
+
+	.tile.turnable {
+		cursor: pointer;
+	}
+
+	.turn-mark {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		translate: -50% -50%;
+		font-size: clamp(1rem, 3.4vw, 1.8rem);
+		color: var(--warm-100);
+		text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.25s var(--ease-out), rotate 0.35s var(--ease-out);
+		z-index: 2;
+	}
+
+	.tile.turnable:hover .turn-mark {
+		opacity: 0.92;
+		rotate: 90deg;
+	}
+
+	/* On touch there is no hover, so askew pieces advertise themselves. */
+	@media (hover: none) {
+		.tile.askew .turn-mark {
+			opacity: 0.5;
+		}
 	}
 
 	/* A tile that has found its own square glows faintly warm. */
@@ -255,14 +334,12 @@
 		70% { translate: -2px 0; }
 	}
 
-	.tile.hidden {
+	.tile.hidden .face {
 		background: linear-gradient(
 			145deg,
 			hsl(var(--hue) 26% 30%),
 			hsl(calc(var(--hue) + 30) 22% 18%)
 		);
-		display: grid;
-		place-items: center;
 	}
 
 	.numeral {
@@ -295,7 +372,8 @@
 	/* Reduced motion: keep the information, drop the movement. */
 	.frame.still .tile,
 	.frame.still .tile.anchor,
-	.frame.still .tile.hinted {
+	.frame.still .tile.hinted,
+	.frame.still .face {
 		animation: none;
 		transition-duration: 0.09s;
 	}

@@ -251,6 +251,17 @@ export function playSlide(progress = 0): void {
 	tone({ frequency: step(degree), duration: 0.14, peak: 0.13, type: 'triangle' });
 }
 
+/**
+ * A piece turned a quarter. `from` is the rotation it left behind, so the pitch
+ * climbs as the tile comes round to upright — you can hear it getting close.
+ */
+export function playTurn(from: number): void {
+	const remaining = (4 - (from % 4)) % 4; // 3, 2, 1 as it approaches true
+	const degree = SCALE[Math.max(0, 4 - remaining)];
+	tone({ frequency: step(degree), duration: 0.13, peak: 0.14, type: 'triangle' });
+	tone({ frequency: step(degree) * 1.5, duration: 0.09, peak: 0.05, delay: 0.02 });
+}
+
 /** A tile landed on its home square — a small, clean bell. */
 export function playHome(): void {
 	tone({ frequency: step(12), duration: 0.5, peak: 0.16 });

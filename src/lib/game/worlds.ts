@@ -7,12 +7,18 @@
  * Nothing is explained in words beyond a single line of flavour.
  */
 
-export type WorldId = 'beginnings' | 'unmoved' | 'hidden' | 'hiccups';
+import type { Mode } from './board';
+
+export type WorldId = 'beginnings' | 'turning' | 'unmoved' | 'hidden' | 'hiccups';
 
 export interface World {
 	readonly id: WorldId;
 	readonly title: string;
 	readonly flavour: string;
+	/** Which disturbances are in play: sliding, turning, or both. */
+	readonly mode: Mode;
+	/** Share of tiles knocked out of true, 0-1. Ignored when mode is 'slide'. */
+	readonly turnRatio: number;
 	/** Immovable tiles that rewind cannot touch. */
 	readonly anchors: number;
 	/** The image stays hidden until the board is solved. */
@@ -28,15 +34,31 @@ export const WORLDS: readonly World[] = [
 		id: 'beginnings',
 		title: 'Beginnings',
 		flavour: 'Nothing here is lost. Hold to unwind.',
+		mode: 'slide',
+		turnRatio: 0,
 		anchors: 0,
 		mystery: false,
 		hiccups: false,
 		hue: 38
 	},
 	{
+		id: 'turning',
+		title: 'The Turning',
+		flavour: 'Every piece is here. None of them are facing you.',
+		// Nothing slides: the picture is whole, just wrongly oriented.
+		mode: 'turn',
+		turnRatio: 0.65,
+		anchors: 0,
+		mystery: false,
+		hiccups: false,
+		hue: 196
+	},
+	{
 		id: 'unmoved',
 		title: 'The Unmoved',
 		flavour: 'Some things time refuses to touch.',
+		mode: 'slide',
+		turnRatio: 0,
 		anchors: 1,
 		mystery: false,
 		hiccups: false,
@@ -46,6 +68,8 @@ export const WORLDS: readonly World[] = [
 		id: 'hidden',
 		title: 'Hidden Hours',
 		flavour: 'You will know what it was when it is over.',
+		mode: 'both',
+		turnRatio: 0.4,
 		anchors: 1,
 		mystery: true,
 		hiccups: false,
@@ -55,6 +79,8 @@ export const WORLDS: readonly World[] = [
 		id: 'hiccups',
 		title: 'Hiccups',
 		flavour: 'Time here is not quite well.',
+		mode: 'both',
+		turnRatio: 0.5,
 		anchors: 2,
 		mystery: false,
 		hiccups: true,
