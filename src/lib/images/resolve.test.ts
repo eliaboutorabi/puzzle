@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS_PER_WORLD, WORLDS, levelOrdinal } from '$lib/game/worlds';
+import { GALLERY } from './gallery';
 import { pickForOrdinal } from './resolve';
 
-const GALLERY_IDS = [
-	'long-afternoon',
-	'green-hour',
-	'quiet-water',
-	'last-light',
-	'the-orchard',
-	'before-the-rain'
-];
+// Taken from the real gallery rather than duplicated, so renaming a painting
+// cannot leave this test quietly passing against ids that no longer exist.
+const GALLERY_IDS = GALLERY.map((painting) => painting.id);
 
 /** Every level in the game, in the order a player meets them. */
 const everyLevel = WORLDS.flatMap((world) =>
@@ -54,7 +50,7 @@ describe('a different picture for each puzzle', () => {
 	});
 
 	it('survives an empty pool rather than breaking the board', () => {
-		expect(pickForOrdinal([], 3)).toBe('long-afternoon');
+		expect(pickForOrdinal([], 3)).toBe(GALLERY[0].id);
 	});
 
 	it('handles more levels than pictures by cycling', () => {

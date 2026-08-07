@@ -20,7 +20,7 @@ const DEFAULTS: Shape = {
 	music: true,
 	difficulty: 'gentle',
 	reducedMotion: false,
-	imageId: 'long-afternoon',
+	imageId: 'sunset-hills',
 	varyPictures: true
 };
 

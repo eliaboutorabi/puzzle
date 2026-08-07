@@ -53,9 +53,14 @@ device. Clearing site data removes it.
 ## How it is built
 
 - **SvelteKit** with `adapter-static` — fully prerendered, no server at runtime
-- **No image assets.** The gallery paintings are drawn procedurally on a canvas,
-  which keeps the deploy tiny and means every stock picture already matches the
-  art direction
+- **No image assets.** The nine gallery pictures are drawn procedurally on a
+  canvas, which keeps the deploy tiny and sidesteps licensing entirely. Each is
+  its own scene rather than one composition recoloured — hills, aurora,
+  balloons, a flower field, an ocean sunrise, rainbow arcs, a night city, dunes,
+  a citrus grove. Two rules they all follow come from what a *puzzle* needs:
+  detail everywhere (a flat region makes several tiles identical, which is
+  tedious rather than hard) and colour that shifts across the frame, so a tile
+  can be placed from its colour alone
 - **No audio assets.** Music and effects are synthesised with the Web Audio API.
   The theme is rendered once into an `AudioBuffer`, and rewinding plays a
   sample-reversed copy of it

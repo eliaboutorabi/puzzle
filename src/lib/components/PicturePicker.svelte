@@ -44,7 +44,9 @@
 	async function remove(choice: Choice) {
 		await deletePhoto(choice.id);
 		forget(choice.id);
-		if (settings.imageId === choice.id) settings.setImage('long-afternoon');
+		// Deleting the pinned photo leaves nothing pinned, so fall back to variety
+		// rather than silently pinning some painting the player never chose.
+		if (settings.imageId === choice.id) settings.varyEveryPuzzle();
 		await refresh();
 	}
 
