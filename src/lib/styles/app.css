@@ -1,37 +1,45 @@
-/* Warm, painted, slightly out of focus. Everything here is dusk-coloured. */
+/* Light, soft, a wash of lilac into white. */
 
 :root {
-	--ink: #f4e6cf;
-	--ink-soft: #cdb59a;
-	--paper: #211a1c;
+	--ink: #322549;
+	--ink-soft: #6b5f88;
+	--paper: #f6f2fd;
 
-	--warm-100: #fbeacc;
-	--warm-200: #f0cf9c;
-	--warm-300: #dda86c;
-	--warm-400: #bf7f4f;
-	--warm-500: #8a5738;
+	/* The lilac the page is built on. */
+	--lilac-50: #fdfbff;
+	--lilac-100: #f4eefd;
+	--lilac-200: #e9dffb;
+	--lilac-300: #d7c6f5;
+	--lilac-400: #b79ce8;
+	--lilac-500: #8f6fd0;
+	--lilac-600: #6a4aa8;
 
-	--dusk-100: #6b5a63;
-	--dusk-200: #4a3d48;
-	--dusk-300: #342b34;
-	--dusk-400: #241e26;
+	--glow: #2fa46b;
 
-	--glow: #7fe0a8;
+	--hue: 265;
 
-	--hue: 38;
-	--world-light: hsl(var(--hue) 74% 66%);
-	--world-deep: hsl(var(--hue) 40% 22%);
+	/* Surfaces derive from the active --hue, so each world keeps its identity
+	   in cards and controls while the page itself stays lilac. */
+	--surface: hsl(var(--hue) 100% 99.5%);
+	--surface-tint: hsl(var(--hue) 60% 96.5%);
+	--surface-sink: hsl(var(--hue) 45% 93%);
+	--edge: hsl(var(--hue) 45% 86%);
+	--edge-strong: hsl(var(--hue) 50% 72%);
+	--accent: hsl(var(--hue) 52% 50%);
+	--accent-deep: hsl(var(--hue) 55% 38%);
+	--accent-wash: hsl(var(--hue) 72% 94%);
 
 	--radius: 14px;
 	--radius-lg: 24px;
 
-	--shadow-soft: 0 18px 50px -22px rgba(0, 0, 0, 0.85);
-	--shadow-lift: 0 26px 60px -20px rgba(0, 0, 0, 0.9);
+	/* Shadows on light need to be soft and tinted; black shadows look grubby. */
+	--shadow-soft: 0 10px 28px -14px rgba(88, 58, 148, 0.4);
+	--shadow-lift: 0 20px 44px -16px rgba(88, 58, 148, 0.45);
 
 	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 	--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-	color-scheme: dark;
+	color-scheme: light;
 }
 
 * {
@@ -45,9 +53,10 @@ body {
 }
 
 body {
-	background: var(--paper);
+	/* The blend itself: white at the top left, lilac deepening toward the foot. */
+	background: linear-gradient(155deg, #ffffff 0%, var(--lilac-100) 38%, var(--lilac-200) 78%, #e3d6f8 100%);
+	background-attachment: fixed;
 	color: var(--ink);
-	/* No webfont: a bookish system serif keeps the site self-contained and instant. */
 	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
 	font-size: 17px;
 	line-height: 1.55;
@@ -55,7 +64,8 @@ body {
 	overflow-x: hidden;
 }
 
-/* The whole game sits under a slow, warm wash of light. */
+/* Slow drifting bloom. Fixed lilac rather than the world hue, so the page
+   stays the same colour everywhere and only the cards change. */
 body::before {
 	content: '';
 	position: fixed;
@@ -63,24 +73,23 @@ body::before {
 	pointer-events: none;
 	z-index: 0;
 	background:
-		radial-gradient(45vmax 45vmax at 22% 18%, hsl(var(--hue) 60% 40% / 0.42), transparent 65%),
-		radial-gradient(50vmax 50vmax at 82% 78%, hsl(calc(var(--hue) + 40) 45% 32% / 0.34), transparent 68%),
-		radial-gradient(70vmax 70vmax at 50% 110%, #120e12, transparent 70%);
-	filter: blur(20px);
+		radial-gradient(45vmax 45vmax at 20% 16%, rgba(255, 255, 255, 0.95), transparent 62%),
+		radial-gradient(46vmax 46vmax at 82% 26%, rgba(197, 170, 240, 0.5), transparent 66%),
+		radial-gradient(56vmax 56vmax at 50% 104%, rgba(168, 140, 226, 0.42), transparent 70%);
+	filter: blur(16px);
 	animation: drift 34s var(--ease-out) infinite alternate;
-	transition: background 1.2s ease;
 }
 
-/* Paper grain over everything, so flat colour never looks digital. */
+/* Paper grain, barely there — on a light ground it turns to dirt quickly. */
 body::after {
 	content: '';
 	position: fixed;
 	inset: 0;
 	pointer-events: none;
 	z-index: 1;
-	opacity: 0.32;
-	mix-blend-mode: overlay;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+	opacity: 0.5;
+	mix-blend-mode: multiply;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E");
 }
 
 @keyframes drift {
@@ -110,23 +119,23 @@ p {
 }
 
 a {
-	color: var(--warm-200);
+	color: var(--lilac-600);
 }
 
 .flavour {
 	font-style: italic;
-	color: var(--warm-200);
-	opacity: 0.85;
+	color: var(--lilac-600);
+	opacity: 0.92;
 }
 
-/* Buttons feel pressable: they lift on hover and sink on press. */
+/* Buttons read as raised white cards with a lilac edge. */
 button {
 	font: inherit;
-	color: inherit;
+	color: var(--ink);
 	cursor: pointer;
-	border: 1px solid hsl(var(--hue) 30% 62% / 0.28);
+	border: 1px solid var(--edge);
 	border-radius: var(--radius);
-	background: linear-gradient(hsl(var(--hue) 22% 26% / 0.9), hsl(var(--hue) 24% 18% / 0.9));
+	background: linear-gradient(#ffffff, var(--surface-tint));
 	padding: 0.65em 1.2em;
 	box-shadow: var(--shadow-soft);
 	transition:
@@ -138,7 +147,7 @@ button {
 
 button:hover:not(:disabled) {
 	transform: translateY(-2px);
-	border-color: hsl(var(--hue) 60% 70% / 0.55);
+	border-color: var(--edge-strong);
 	box-shadow: var(--shadow-lift);
 }
 
@@ -147,24 +156,25 @@ button:active:not(:disabled) {
 }
 
 button:disabled {
-	opacity: 0.42;
+	opacity: 0.45;
 	cursor: default;
+	box-shadow: none;
 }
 
 button.primary {
-	background: linear-gradient(hsl(var(--hue) 62% 58%), hsl(var(--hue) 55% 44%));
-	border-color: hsl(var(--hue) 70% 74% / 0.6);
-	color: #2a1c14;
+	background: linear-gradient(hsl(var(--hue) 58% 62%), hsl(var(--hue) 55% 50%));
+	border-color: hsl(var(--hue) 55% 46%);
+	color: #ffffff;
 	font-weight: 700;
 }
 
 button.ghost {
-	background: hsl(var(--hue) 20% 30% / 0.35);
+	background: rgba(255, 255, 255, 0.72);
 	box-shadow: none;
 }
 
 :focus-visible {
-	outline: 2px solid var(--warm-200);
+	outline: 2px solid var(--accent);
 	outline-offset: 3px;
 	border-radius: 6px;
 }
@@ -205,7 +215,7 @@ button.ghost {
 }
 
 .muted {
-	opacity: 0.72;
+	color: var(--ink-soft);
 	font-size: 0.92rem;
 }
 

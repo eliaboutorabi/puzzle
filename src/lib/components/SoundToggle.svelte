@@ -42,8 +42,8 @@
 		gap: 0.35rem;
 		padding: 0.3rem;
 		border-radius: 999px;
-		background: hsl(var(--hue) 16% 12% / 0.72);
-		border: 1px solid hsl(var(--hue) 40% 60% / 0.22);
+		background: rgba(255, 255, 255, 0.85);
+		border: 1px solid var(--edge);
 		backdrop-filter: blur(10px);
 		box-shadow: var(--shadow-soft);
 	}
@@ -58,13 +58,13 @@
 		border: none;
 		background: none;
 		box-shadow: none;
-		color: var(--warm-100);
+		color: var(--accent-deep);
 		opacity: 0.9;
 	}
 
 	.icon:hover:not(:disabled) {
 		transform: none;
-		background: hsl(var(--hue) 30% 30% / 0.6);
+		background: var(--accent-wash);
 		box-shadow: none;
 	}
 

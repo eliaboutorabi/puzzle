@@ -325,7 +325,7 @@
 		width: min(58vh, 92vw, 560px);
 		height: 4px;
 		border-radius: 999px;
-		background: hsl(var(--hue) 20% 30% / 0.6);
+		background: hsl(var(--hue) 35% 90%);
 		overflow: hidden;
 	}
 
@@ -333,8 +333,8 @@
 		display: block;
 		height: 100%;
 		width: calc(var(--fill) * 100%);
-		background: linear-gradient(90deg, hsl(var(--hue) 70% 50%), hsl(var(--hue) 90% 72%));
-		box-shadow: 0 0 14px hsl(var(--hue) 90% 60% / 0.8);
+		background: linear-gradient(90deg, hsl(var(--hue) 55% 58%), hsl(var(--hue) 70% 46%));
+		box-shadow: 0 0 12px hsl(var(--hue) 70% 55% / 0.55);
 		transition: width 0.5s var(--ease-out);
 	}
 
@@ -352,9 +352,10 @@
 	}
 
 	.rewind.active {
-		background: linear-gradient(hsl(210 40% 44%), hsl(214 44% 30%));
-		border-color: hsl(206 70% 74% / 0.7);
-		box-shadow: 0 0 34px -6px hsl(208 80% 60% / 0.8);
+		background: linear-gradient(hsl(210 70% 62%), hsl(214 65% 50%));
+		border-color: hsl(210 60% 45%);
+		color: #ffffff;
+		box-shadow: 0 0 28px -8px hsl(210 75% 55% / 0.75);
 	}
 
 	/* The rewind glyph runs backward while time does. */
@@ -396,7 +397,7 @@
 		place-items: end center;
 		padding-bottom: clamp(1rem, 5vh, 3rem);
 		pointer-events: none;
-		background: linear-gradient(transparent 35%, rgba(12, 8, 10, 0.82) 88%);
+		background: linear-gradient(transparent 30%, rgba(238, 230, 252, 0.9) 82%);
 		animation: settle 0.9s var(--ease-out);
 	}
 
@@ -413,8 +414,8 @@
 		text-align: center;
 		padding: clamp(1.6rem, 5vw, 2.6rem);
 		border-radius: var(--radius-lg);
-		border: 1px solid hsl(var(--hue) 50% 66% / 0.35);
-		background: linear-gradient(hsl(var(--hue) 18% 18%), hsl(var(--hue) 16% 12%));
+		border: 1px solid var(--edge);
+		background: linear-gradient(#ffffff, var(--surface-tint));
 		box-shadow: var(--shadow-lift);
 		animation: lift 0.7s var(--ease-spring);
 	}
@@ -442,8 +443,8 @@
 		padding: 0.65em 1.4em;
 		border-radius: var(--radius);
 		font-weight: 700;
-		color: #2a1c14;
-		background: linear-gradient(hsl(var(--hue) 62% 60%), hsl(var(--hue) 55% 46%));
+		color: #ffffff;
+		background: linear-gradient(hsl(var(--hue) 58% 60%), hsl(var(--hue) 55% 48%));
 		box-shadow: var(--shadow-soft);
 		transition: transform 0.24s var(--ease-spring);
 	}
@@ -453,7 +454,8 @@
 	}
 
 	.cta.ghost-link {
-		background: hsl(var(--hue) 20% 28% / 0.7);
+		background: rgba(255, 255, 255, 0.9);
+		border: 1px solid var(--edge);
 		color: var(--ink);
 		font-weight: 400;
 	}

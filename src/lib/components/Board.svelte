@@ -134,12 +134,11 @@
 		margin-inline: auto;
 		border-radius: var(--radius-lg);
 		padding: 10px;
-		background:
-			linear-gradient(hsl(var(--hue) 18% 22% / 0.9), hsl(var(--hue) 16% 13% / 0.95));
+		background: linear-gradient(#ffffff, var(--surface-sink));
 		box-shadow:
 			var(--shadow-lift),
-			inset 0 1px 0 hsl(var(--hue) 40% 70% / 0.16);
-		border: 1px solid hsl(var(--hue) 30% 60% / 0.22);
+			inset 0 1px 0 rgba(255, 255, 255, 0.9);
+		border: 1px solid var(--edge);
 		transition: filter 0.4s var(--ease-out), transform 0.5s var(--ease-spring);
 	}
 
@@ -206,8 +205,8 @@
 		background: none;
 		overflow: hidden;
 		box-shadow:
-			inset 0 0 0 1px rgba(0, 0, 0, 0.4),
-			0 6px 14px -8px rgba(0, 0, 0, 0.9);
+			inset 0 0 0 1px rgba(70, 45, 120, 0.22),
+			0 5px 12px -7px rgba(70, 45, 120, 0.6);
 		/* The two properties that make this feel alive. */
 		transition:
 			transform 0.26s var(--ease-spring),
@@ -225,7 +224,7 @@
 		display: grid;
 		place-items: center;
 		border-radius: 7px;
-		background-color: var(--dusk-300);
+		background-color: var(--surface-sink);
 		background-repeat: no-repeat;
 		transition: transform 0.42s var(--ease-spring);
 		will-change: transform;
@@ -258,8 +257,10 @@
 		left: 50%;
 		translate: -50% -50%;
 		font-size: clamp(1rem, 3.4vw, 1.8rem);
-		color: var(--warm-100);
-		text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+		/* Sits on the picture, which can be any colour, so it stays white with a
+		   dark halo rather than taking a theme colour. */
+		color: #ffffff;
+		text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.6);
 		opacity: 0;
 		pointer-events: none;
 		transition: opacity 0.25s var(--ease-out), rotate 0.35s var(--ease-out);
@@ -278,11 +279,11 @@
 		}
 	}
 
-	/* A tile that has found its own square glows faintly warm. */
+	/* A tile that has found its own square glows faintly. */
 	.tile.home {
 		box-shadow:
-			inset 0 0 0 1px hsl(var(--hue) 70% 70% / 0.5),
-			0 0 18px -2px hsl(var(--hue) 80% 60% / 0.32);
+			inset 0 0 0 2px hsl(var(--hue) 60% 58% / 0.65),
+			0 0 16px -2px hsl(var(--hue) 65% 55% / 0.45);
 	}
 
 	/* Time does not touch these. Braid's green. */
@@ -337,14 +338,15 @@
 	.tile.hidden .face {
 		background: linear-gradient(
 			145deg,
-			hsl(var(--hue) 26% 30%),
-			hsl(calc(var(--hue) + 30) 22% 18%)
+			hsl(var(--hue) 55% 90%),
+			hsl(calc(var(--hue) + 30) 45% 80%)
 		);
 	}
 
 	.numeral {
 		font-size: clamp(0.9rem, 3vw, 1.5rem);
-		opacity: 0.4;
+		color: hsl(var(--hue) 45% 38%);
+		opacity: 0.75;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -354,10 +356,11 @@
 		z-index: 5;
 		border-radius: var(--radius-lg);
 		pointer-events: none;
+		/* Dark scanlines: on a light board, pale ones are invisible. */
 		background: repeating-linear-gradient(
 			0deg,
-			rgba(190, 220, 255, 0.05) 0px,
-			rgba(190, 220, 255, 0.05) 2px,
+			rgba(70, 45, 120, 0.07) 0px,
+			rgba(70, 45, 120, 0.07) 2px,
 			transparent 2px,
 			transparent 5px
 		);

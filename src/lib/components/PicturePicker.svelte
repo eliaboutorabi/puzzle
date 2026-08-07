@@ -145,7 +145,7 @@
 		position: fixed;
 		inset: 0;
 		z-index: 40;
-		background: rgba(12, 8, 10, 0.72);
+		background: rgba(60, 40, 100, 0.28);
 		backdrop-filter: blur(6px);
 		border: none;
 		animation: fade 0.3s var(--ease-out);
@@ -168,9 +168,9 @@
 		padding: clamp(1.1rem, 4vw, 2rem);
 		padding-bottom: max(2rem, env(safe-area-inset-bottom));
 		border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-		background: linear-gradient(hsl(var(--hue) 16% 17%), hsl(var(--hue) 14% 11%));
-		border-top: 1px solid hsl(var(--hue) 40% 60% / 0.3);
-		box-shadow: 0 -30px 70px -20px rgba(0, 0, 0, 0.9);
+		background: linear-gradient(#ffffff, var(--lilac-100));
+		border-top: 1px solid var(--edge);
+		box-shadow: 0 -24px 60px -24px rgba(88, 58, 148, 0.5);
 		animation: rise 0.42s var(--ease-out);
 	}
 
@@ -194,7 +194,7 @@
 		padding: 6px;
 		display: block;
 		border-radius: var(--radius);
-		background: hsl(var(--hue) 14% 22% / 0.6);
+		background: rgba(255, 255, 255, 0.9);
 	}
 
 	.pick img {
@@ -206,10 +206,10 @@
 	}
 
 	.pick.chosen {
-		border-color: var(--warm-200);
+		border-color: var(--accent);
 		box-shadow:
-			0 0 0 2px var(--warm-200),
-			0 0 30px -6px hsl(var(--hue) 80% 60% / 0.6);
+			0 0 0 2px var(--accent),
+			0 6px 22px -8px hsl(var(--hue) 60% 55% / 0.55);
 	}
 
 	.label {
@@ -232,12 +232,12 @@
 		place-items: center;
 		padding: 0;
 		border-radius: 50%;
-		background: var(--dusk-200);
+		background: #ffffff;
 		color: var(--ink);
 	}
 
 	.remove:hover {
-		color: #f0a58f;
+		color: #b3261e;
 	}
 
 	.mode-head {
@@ -247,7 +247,7 @@
 	}
 
 	.error {
-		color: #f0a58f;
+		color: #b3261e;
 		font-size: 0.9rem;
 	}
 
@@ -261,8 +261,8 @@
 	}
 
 	.mode.on {
-		border-color: var(--warm-200);
-		background: linear-gradient(hsl(34 40% 30%), hsl(30 38% 20%));
-		box-shadow: 0 0 30px -10px hsl(34 80% 60% / 0.6);
+		border-color: var(--edge-strong);
+		background: linear-gradient(#ffffff, var(--accent-wash));
+		box-shadow: 0 6px 20px -8px hsl(var(--hue) 60% 55% / 0.45);
 	}
 </style>

@@ -159,11 +159,11 @@
 		padding: 10px;
 		gap: 3px;
 		border-radius: 10px;
-		background: linear-gradient(hsl(32 26% 26%), hsl(28 24% 15%));
-		border: 1px solid hsl(var(--hue) 40% 60% / 0.28);
+		background: linear-gradient(#ffffff, var(--surface-sink));
+		border: 1px solid var(--edge);
 		box-shadow:
 			var(--shadow-lift),
-			0 0 46px -14px hsl(var(--hue) 80% 55% / 0.5);
+			0 0 40px -16px hsl(var(--hue) 60% 55% / 0.5);
 	}
 
 	.band {
@@ -194,8 +194,8 @@
 		background:
 			repeating-linear-gradient(
 				-45deg,
-				hsl(var(--hue) 20% 30% / 0.5) 0 8px,
-				hsl(var(--hue) 16% 22% / 0.5) 8px 16px
+				hsl(var(--hue) 40% 90%) 0 8px,
+				hsl(var(--hue) 30% 84%) 8px 16px
 			);
 	}
 
@@ -221,8 +221,8 @@
 	/* Emptying the attic throws away every solved level, so it should not look
 	   like the button next to it. */
 	.danger:hover {
-		color: #f0a58f;
-		border-color: #f0a58f5c;
+		color: #b3261e;
+		border-color: rgba(178, 40, 30, 0.35);
 	}
 
 	/* When the last piece lands, the whole room warms up. */
@@ -231,7 +231,7 @@
 	}
 
 	@keyframes glow {
-		from { box-shadow: var(--shadow-lift), 0 0 46px -14px hsl(var(--hue) 80% 55% / 0.5); }
-		to { box-shadow: var(--shadow-lift), 0 0 80px -10px hsl(var(--hue) 90% 62% / 0.85); }
+		from { box-shadow: var(--shadow-lift), 0 0 40px -16px hsl(var(--hue) 60% 55% / 0.45); }
+		to { box-shadow: var(--shadow-lift), 0 0 70px -12px hsl(var(--hue) 70% 58% / 0.7); }
 	}
 </style>

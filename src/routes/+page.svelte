@@ -174,12 +174,12 @@
 	}
 
 	h1 {
-		background: linear-gradient(hsl(42 90% 84%), hsl(28 70% 58%));
+		background: linear-gradient(var(--lilac-500), var(--lilac-600));
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
 		margin-block: 0.2em 0.15em;
-		filter: drop-shadow(0 8px 30px hsl(34 80% 50% / 0.35));
+		filter: drop-shadow(0 10px 26px rgba(138, 105, 208, 0.35));
 	}
 
 	.setup {
@@ -226,13 +226,13 @@
 
 	.chip.on :global(svg) {
 		opacity: 1;
-		color: var(--warm-200);
+		color: var(--accent-deep);
 	}
 
 	.chip.on {
-		border-color: var(--warm-200);
-		background: linear-gradient(hsl(34 40% 32%), hsl(30 38% 22%));
-		box-shadow: 0 0 30px -8px hsl(34 80% 60% / 0.55);
+		border-color: var(--edge-strong);
+		background: linear-gradient(#ffffff, var(--accent-wash));
+		box-shadow: 0 6px 20px -8px hsl(var(--hue) 60% 55% / 0.5);
 	}
 
 	.picture {
@@ -257,7 +257,7 @@
 		object-fit: cover;
 		border-radius: 10px;
 		flex: none;
-		border: 2px solid hsl(var(--hue, 34) 16% 14%);
+		border: 2px solid #ffffff;
 		margin-right: -22px;
 		transform: rotate(calc((var(--i) - 1) * 3deg));
 		transition: transform 0.35s var(--ease-spring);
@@ -298,10 +298,10 @@
 		gap: 0.55rem;
 		padding: 1.2rem;
 		border-radius: var(--radius-lg);
-		border: 1px solid hsl(var(--hue) 40% 60% / 0.24);
+		border: 1px solid var(--edge);
 		background:
-			radial-gradient(120% 90% at 50% 0%, hsl(var(--hue) 40% 30% / 0.6), transparent 70%),
-			linear-gradient(hsl(var(--hue) 14% 17%), hsl(var(--hue) 12% 11%));
+			radial-gradient(120% 90% at 50% 0%, hsl(var(--hue) 75% 95%), transparent 72%),
+			linear-gradient(#ffffff, var(--surface-tint));
 		box-shadow: var(--shadow-soft);
 		transition: transform 0.35s var(--ease-spring), box-shadow 0.35s var(--ease-out);
 	}
@@ -332,14 +332,14 @@
 		height: 38px;
 		flex: none;
 		border-radius: 50%;
-		color: hsl(var(--hue) 85% 76%);
-		background: hsl(var(--hue) 45% 26% / 0.85);
-		box-shadow: inset 0 0 0 1px hsl(var(--hue) 60% 66% / 0.35);
+		color: hsl(var(--hue) 55% 42%);
+		background: hsl(var(--hue) 70% 93%);
+		box-shadow: inset 0 0 0 1px hsl(var(--hue) 50% 78%);
 	}
 
 	.world.locked .world-mark {
 		color: var(--ink);
-		background: hsl(var(--hue) 10% 24% / 0.7);
+		background: hsl(var(--hue) 12% 90%);
 		box-shadow: none;
 	}
 
@@ -352,13 +352,13 @@
 		width: 9px;
 		height: 9px;
 		border-radius: 50%;
-		background: hsl(var(--hue) 20% 40%);
+		background: hsl(var(--hue) 30% 84%);
 		transition: background 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
 	}
 
 	.pip.filled {
-		background: hsl(var(--hue) 80% 68%);
-		box-shadow: 0 0 12px hsl(var(--hue) 80% 60% / 0.9);
+		background: hsl(var(--hue) 60% 55%);
+		box-shadow: 0 0 10px hsl(var(--hue) 70% 60% / 0.7);
 	}
 
 	.levels {
@@ -373,20 +373,20 @@
 		height: 44px;
 		border-radius: 12px;
 		text-decoration: none;
-		border: 1px solid hsl(var(--hue) 40% 60% / 0.3);
-		background: hsl(var(--hue) 20% 24% / 0.7);
+		border: 1px solid var(--edge);
+		background: rgba(255, 255, 255, 0.85);
 		color: var(--ink);
 		transition: transform 0.24s var(--ease-spring), background 0.24s var(--ease-out);
 	}
 
 	.level:hover {
 		transform: translateY(-3px) scale(1.05);
-		background: hsl(var(--hue) 40% 34%);
+		background: hsl(var(--hue) 70% 92%);
 	}
 
 	.level.done {
-		background: linear-gradient(hsl(var(--hue) 60% 52%), hsl(var(--hue) 55% 38%));
-		color: #2a1c14;
+		background: linear-gradient(hsl(var(--hue) 58% 60%), hsl(var(--hue) 55% 48%));
+		color: #ffffff;
 		font-weight: 700;
 	}
 </style>
