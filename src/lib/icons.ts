@@ -29,18 +29,14 @@ import {
 	Refresh01Icon,
 	Rotate01Icon,
 	SparklesIcon,
-	Time01Icon,
-	VolumeHighIcon,
-	VolumeOffIcon
+	Time01Icon
 } from '@hugeicons/core-free-icons';
 
 import type { WorldId } from '$lib/game/worlds';
 import type { DifficultyId } from '$lib/game/worlds';
 
 export const icons = {
-	// Sound
-	soundOn: VolumeHighIcon,
-	soundOff: VolumeOffIcon,
+	// Sound — one control, so one glyph. It strikes through when muted.
 	music: MusicNote01Icon,
 
 	// Navigation

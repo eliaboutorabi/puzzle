@@ -5,18 +5,13 @@
 	import { settings } from '$lib/state/settings.svelte';
 
 	/**
-	 * Lives in the corner of every screen. Two separate controls on purpose:
-	 * plenty of people want the effects but not the music, and being forced to
-	 * choose all-or-nothing is what makes someone mute a game permanently.
+	 * One control, in the corner of every screen. It silences everything —
+	 * music and effects together — because a single button that only half
+	 * worked would be worse than either of the two it replaced.
 	 */
-	function toggleAll() {
+	function toggleSound() {
 		settings.toggleMuted();
 		if (!settings.muted) sfx.playUi();
-	}
-
-	function toggleMusic() {
-		settings.toggleMusic();
-		sfx.playUi();
 	}
 </script>
 
@@ -24,31 +19,14 @@
 	<button
 		class="icon"
 		class:off={settings.muted}
-		onclick={toggleAll}
+		onclick={toggleSound}
 		aria-pressed={settings.muted}
-		title={settings.muted ? 'Turn sound on' : 'Turn all sound off'}
-		aria-label={settings.muted ? 'Turn sound on' : 'Turn all sound off'}
-	>
-		<HugeiconsIcon
-			icon={settings.muted ? icons.soundOff : icons.soundOn}
-			size={21}
-			strokeWidth={1.8}
-			color="currentColor"
-		/>
-	</button>
-
-	<button
-		class="icon"
-		class:off={!settings.music || settings.muted}
-		onclick={toggleMusic}
-		disabled={settings.muted}
-		aria-pressed={!settings.music}
-		title={settings.music ? 'Turn the music off' : 'Turn the music on'}
-		aria-label={settings.music ? 'Turn the music off' : 'Turn the music on'}
+		title={settings.muted ? 'Turn sound on' : 'Turn sound off'}
+		aria-label={settings.muted ? 'Turn sound on' : 'Turn sound off'}
 	>
 		<!-- The set has no struck-through music note, so the strike is drawn here
 		     rather than settling for a merely dimmed icon. -->
-		<span class="glyph" class:struck={!settings.music}>
+		<span class="glyph" class:struck={settings.muted}>
 			<HugeiconsIcon icon={icons.music} size={21} strokeWidth={1.8} color="currentColor" />
 		</span>
 	</button>
