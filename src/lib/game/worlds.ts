@@ -7,16 +7,18 @@
  * Nothing is explained in words beyond a single line of flavour.
  */
 
-import type { Mode } from './board';
+import type { Mode, Shape } from './board';
 
-export type WorldId = 'beginnings' | 'turning' | 'unmoved' | 'hidden' | 'hiccups';
+export type WorldId = 'beginnings' | 'turning' | 'unmoved' | 'oddpieces' | 'hidden' | 'hiccups';
 
 export interface World {
 	readonly id: WorldId;
 	readonly title: string;
 	readonly flavour: string;
-	/** Which disturbances are in play: sliding, turning, or both. */
+	/** Which disturbances are in play: sliding, turning, scattering, or both. */
 	readonly mode: Mode;
+	/** Plain cells, or pieces cut with interlocking tabs. */
+	readonly shape: Shape;
 	/** Share of tiles knocked out of true, 0-1. Ignored when mode is 'slide'. */
 	readonly turnRatio: number;
 	/** Immovable tiles that rewind cannot touch. */
@@ -35,6 +37,7 @@ export const WORLDS: readonly World[] = [
 		title: 'Beginnings',
 		flavour: 'Nothing here is lost. Hold to unwind.',
 		mode: 'slide',
+		shape: 'square',
 		turnRatio: 0,
 		anchors: 0,
 		mystery: false,
@@ -44,10 +47,12 @@ export const WORLDS: readonly World[] = [
 	{
 		id: 'turning',
 		title: 'The Turning',
-		flavour: 'Every piece is here. None of them are facing you.',
-		// Nothing slides: the picture is whole, just wrongly oriented.
-		mode: 'turn',
-		turnRatio: 0.65,
+		flavour: 'Wrong way up, and in the wrong place. Find both.',
+		// Nothing slides. Pick a piece, click it again to turn it, or click
+		// another to trade places.
+		mode: 'scatter',
+		shape: 'square',
+		turnRatio: 0.7,
 		anchors: 0,
 		mystery: false,
 		hiccups: false,
@@ -58,6 +63,7 @@ export const WORLDS: readonly World[] = [
 		title: 'The Unmoved',
 		flavour: 'Some things time refuses to touch.',
 		mode: 'slide',
+		shape: 'square',
 		turnRatio: 0,
 		anchors: 1,
 		mystery: false,
@@ -65,10 +71,24 @@ export const WORLDS: readonly World[] = [
 		hue: 128
 	},
 	{
+		id: 'oddpieces',
+		title: 'Odd Pieces',
+		flavour: 'Nothing here is square. The shape tells you where it belongs.',
+		// Interlocking cut pieces, scattered and turned: the hardest world.
+		mode: 'scatter',
+		shape: 'jigsaw',
+		turnRatio: 0.6,
+		anchors: 0,
+		mystery: false,
+		hiccups: false,
+		hue: 156
+	},
+	{
 		id: 'hidden',
 		title: 'Hidden Hours',
 		flavour: 'You will know what it was when it is over.',
 		mode: 'both',
+		shape: 'square',
 		turnRatio: 0.4,
 		anchors: 1,
 		mystery: true,
@@ -80,6 +100,7 @@ export const WORLDS: readonly World[] = [
 		title: 'Hiccups',
 		flavour: 'Time here is not quite well.',
 		mode: 'both',
+		shape: 'square',
 		turnRatio: 0.5,
 		anchors: 2,
 		mystery: false,

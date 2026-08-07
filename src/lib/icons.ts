@@ -27,6 +27,7 @@ import {
 	MountainIcon,
 	MusicNote01Icon,
 	Refresh01Icon,
+	PuzzleIcon,
 	Rotate01Icon,
 	SparklesIcon,
 	Time01Icon
@@ -75,6 +76,7 @@ export const worldIcons: Record<WorldId, typeof Leaf01Icon> = {
 	turning: Rotate01Icon,
 	// Not the mountain: that already means the Steady difficulty.
 	unmoved: AnchorIcon,
+	oddpieces: PuzzleIcon,
 	hidden: EyeOffIcon,
 	hiccups: Time01Icon
 };

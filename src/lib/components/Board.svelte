@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Session } from '$lib/game/session.svelte';
+	import { OVERHANG, piecePath } from '$lib/game/jigsaw';
 	import { settings } from '$lib/state/settings.svelte';
 
 	let {
@@ -24,11 +25,34 @@
 	);
 
 	const hidden = $derived(session.world.mystery && !session.revealed);
+	const jigsaw = $derived(session.board.shape === 'jigsaw');
 
-	function offset(index: number): string {
+	/** Unique per board instance, so two boards on a page cannot collide. */
+	const clipId = $props.id();
+
+	/**
+	 * A jigsaw piece is drawn into a box larger than its cell so tabs have room,
+	 * which changes how the picture must be scaled and offset inside it.
+	 */
+	const boxSpan = $derived(1 + 2 * OVERHANG);
+
+	function faceSize(): string {
+		if (!jigsaw) return `${size * 100}% ${size * 100}%`;
+		const percent = (size / boxSpan) * 100;
+		return `${percent}% ${percent}%`;
+	}
+
+	function faceOffset(index: number): string {
 		const col = index % size;
 		const row = Math.floor(index / size);
-		return `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`;
+		if (!jigsaw) {
+			return `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`;
+		}
+		// Percentage positioning solves (image - box) * p = offset, in cell units.
+		const denominator = size - boxSpan;
+		const x = ((col - OVERHANG) / denominator) * 100;
+		const y = ((row - OVERHANG) / denominator) * 100;
+		return `${x}% ${y}%`;
 	}
 
 	function place(index: number): string {
@@ -53,8 +77,28 @@
 	class:hiccup={session.hiccupping}
 	class:solved={session.phase === 'solved'}
 	class:still={settings.reducedMotion}
+	class:jigsaw
 	style="--size: {size}"
+	role="presentation"
+	onclick={(event) => {
+		// Tapping the frame around the pieces puts a held one back down. Escape
+		// does the same, but is not discoverable on touch.
+		if (!(event.target as HTMLElement).closest('.tile')) session.deselect();
+	}}
 >
+	{#if jigsaw}
+		<!-- One clip path per piece, keyed to its HOME position: the silhouette is
+		     the clue to where a piece belongs, so it must not follow it around. -->
+		<svg class="cuts" aria-hidden="true">
+			<defs>
+				{#each session.board.edges as edges, home (home)}
+					<clipPath id="{clipId}-{home}" clipPathUnits="objectBoundingBox">
+						<path d={piecePath(edges)} />
+					</clipPath>
+				{/each}
+			</defs>
+		</svg>
+	{/if}
 	<!-- The finished picture, faint, beneath the tiles. Gentle mode only. -->
 	{#if session.difficulty.ghost && !hidden}
 		<div class="ghost" style="background-image: url({imageUrl})"></div>
@@ -67,11 +111,14 @@
 			{@const askew = turns !== 0}
 			{@const isAnchor = session.board.anchors.has(entry.tile)}
 			{@const action = session.actionAt(entry.position)}
+			{@const held = session.selected === entry.position}
 			<button
 				class="tile"
 				class:home={settled}
 				class:askew
+				class:held
 				class:turnable={action === 'turn'}
+				class:swappable={action === 'swap'}
 				class:anchor={isAnchor}
 				class:hinted={session.hintAt === entry.position}
 				class:refused={session.refusedAt === entry.position}
@@ -79,11 +126,12 @@
 				style="transform: {place(entry.position)}; --delay: {(entry.tile % 7) * 40}ms;"
 				onclick={() => session.select(entry.position)}
 				disabled={session.phase === 'solved'}
+				aria-pressed={action === 'swap' ? held : undefined}
 				aria-label={isAnchor
 					? `Piece ${entry.tile + 1}, held still by time`
 					: `Piece ${entry.tile + 1}${settled ? ', settled' : ''}${
-							askew ? `, turned ${turns * 90} degrees — click to turn it` : ''
-						}`}
+							askew ? `, turned ${turns * 90} degrees` : ''
+						}${held ? ', picked up — click again to turn it' : ''}`}
 			>
 				<!-- The face carries the picture and the rotation; the button carries
 				     the position. Keeping them apart lets both animate at once. -->
@@ -92,8 +140,9 @@
 					style="
 						transform: {spin(entry.tile)};
 						background-image: {hidden ? 'none' : `url(${imageUrl})`};
-						background-size: {size * 100}% {size * 100}%;
-						background-position: {offset(entry.tile)};
+						background-size: {faceSize()};
+						background-position: {faceOffset(entry.tile)};
+						{jigsaw ? `clip-path: url(#${clipId}-${entry.tile});` : ''}
 					"
 				>
 					{#if hidden}
@@ -103,7 +152,7 @@
 					{/if}
 				</span>
 
-				{#if action === 'turn'}
+				{#if action === 'turn' || held}
 					<span class="turn-mark" aria-hidden="true">⟳</span>
 				{/if}
 				{#if isAnchor}
@@ -267,9 +316,70 @@
 		z-index: 2;
 	}
 
-	.tile.turnable:hover .turn-mark {
+	.tile.turnable:hover .turn-mark,
+	.tile.held .turn-mark {
 		opacity: 0.92;
 		rotate: 90deg;
+	}
+
+	/* --- scattered boards ------------------------------------------------ */
+
+	/* The piece in your hand: lifted, ringed, and above everything else. */
+	.tile.held {
+		z-index: 8;
+		box-shadow:
+			inset 0 0 0 3px var(--accent),
+			0 12px 26px -8px rgba(70, 45, 120, 0.75);
+	}
+
+	.tile.held .face {
+		scale: 0.92;
+	}
+
+	.tile.swappable {
+		cursor: pointer;
+	}
+
+	/* --- jigsaw ---------------------------------------------------------- */
+
+	.cuts {
+		position: absolute;
+		width: 0;
+		height: 0;
+	}
+
+	/* Tabs reach outside the cell, so nothing may clip them and the square
+	   ring would cut straight across a piece. */
+	.frame.jigsaw .tile {
+		overflow: visible;
+		box-shadow: none;
+		border-radius: 0;
+	}
+
+	/* -25% on each side makes the face 1.5x the cell, matching OVERHANG = 0.25
+	   in jigsaw.ts. The two must agree or the picture will not line up. */
+	.frame.jigsaw .face {
+		inset: -25%;
+		border-radius: 0;
+		background-color: transparent;
+		filter: drop-shadow(0 2px 3px rgba(70, 45, 120, 0.45));
+	}
+
+	.frame.jigsaw .tile.home .face {
+		filter: drop-shadow(0 0 4px hsl(var(--hue) 65% 45%));
+	}
+
+	.frame.jigsaw .tile.held {
+		box-shadow: none;
+	}
+
+	.frame.jigsaw .tile.held .face {
+		scale: 1;
+		filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 8px 14px rgba(70, 45, 120, 0.6));
+	}
+
+	.frame.jigsaw .tile:hover:not(:disabled) {
+		z-index: 6;
 	}
 
 	/* On touch there is no hover, so askew pieces advertise themselves. */

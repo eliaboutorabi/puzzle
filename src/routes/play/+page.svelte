@@ -134,6 +134,10 @@
 			nudge(directions[key]);
 		} else if (key === 'h') {
 			session.useHint();
+		} else if (key === 'escape') {
+			// Otherwise a picked-up piece can only be turned or traded, never
+			// simply put back down.
+			session.deselect();
 		}
 	}
 
@@ -225,7 +229,10 @@
 			</button>
 
 			<span class="muted keys">
-				{#if world.mode === 'turn'}
+				{#if world.mode === 'scatter'}
+					click a piece to pick it up · click another to trade places · click it
+					again to turn it · <kbd>Esc</kbd> to put it down
+				{:else if world.mode === 'turn'}
 					click a piece to turn it
 				{:else}
 					arrows to slide · click a crooked piece to turn it

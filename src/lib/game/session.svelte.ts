@@ -2,6 +2,9 @@ import * as sfx from '$lib/audio/sfx';
 import {
 	act,
 	actionAt,
+	canSwap,
+	swap,
+	turn,
 	emptyIndex,
 	hint as findHint,
 	homeCount,
@@ -38,6 +41,8 @@ export class Session {
 	refusedAt = $state<number | null>(null);
 	/** Set briefly when time hiccups, to drive a screen ripple. */
 	hiccupping = $state(false);
+	/** The piece currently picked up on a scattered board, if any. */
+	selected = $state<number | null>(null);
 	/** Mystery worlds keep the picture hidden until the board is solved. */
 	revealed = $state(false);
 	isRecord = $state(false);
@@ -62,6 +67,7 @@ export class Session {
 			steps: difficulty.steps,
 			anchors,
 			turnRatio: world.turnRatio,
+			shape: world.shape,
 			random
 		});
 	}
@@ -73,12 +79,13 @@ export class Session {
 
 	get progress(): number {
 		const cells = this.board.size * this.board.size;
-		const total = this.board.mode === 'turn' ? cells : cells - 1;
+		const hasGap = this.board.mode === 'slide' || this.board.mode === 'both';
+		const total = hasGap ? cells - 1 : cells;
 		return total === 0 ? 1 : homeCount(this.board) / total;
 	}
 
 	/** What a click on this cell would do, for cursors and hover affordances. */
-	actionAt(index: number): 'slide' | 'turn' | null {
+	actionAt(index: number): 'slide' | 'turn' | 'swap' | null {
 		return actionAt(this.board, index);
 	}
 
@@ -94,6 +101,7 @@ export class Session {
 
 	select(index: number): void {
 		if (this.phase === 'solved' || this.rewinding) return;
+		if (this.board.mode === 'scatter') return this.#scatterSelect(index);
 
 		const result = act(this.board, index);
 		if (!result) {
@@ -110,18 +118,79 @@ export class Session {
 
 		// A piece that just came fully to rest — right square, right way up —
 		// earns the bell. Everything else gets the quieter sound.
+		// `act` never yields a swap; scattered boards took the branch above.
+		const move = result.move;
 		const settledNow =
-			result.move.kind === 'turn'
-				? this.board.rotations[result.move.tile] % 4 === 0 &&
-					this.board.cells[result.move.tile] === result.move.tile
-				: result.move.tile === result.move.from &&
-					this.board.rotations[result.move.tile] % 4 === 0;
+			move.kind === 'turn'
+				? this.board.rotations[move.tile] % 4 === 0 && this.board.cells[move.tile] === move.tile
+				: move.kind === 'slide'
+					? move.tile === move.from && this.board.rotations[move.tile] % 4 === 0
+					: false;
 
 		if (settledNow) sfx.playHome();
-		else if (result.move.kind === 'turn') sfx.playTurn(before.rotations[result.move.tile]);
+		else if (move.kind === 'turn') sfx.playTurn(before.rotations[move.tile]);
 		else sfx.playSlide(this.progress);
 
 		if (isSolved(this.board)) this.#finish();
+	}
+
+	/**
+	 * On a scattered board one click does three different things, decided by
+	 * what is already picked up:
+	 *
+	 *   nothing held      -> pick this piece up
+	 *   this piece held   -> turn it a quarter
+	 *   another piece held-> the two trade places
+	 *
+	 * Turning by clicking the held piece again means a single tap never does
+	 * something irreversible-feeling, and the held piece is always visible.
+	 */
+	#scatterSelect(index: number): void {
+		if (!canSwap(this.board, index)) {
+			this.#refuse(index);
+			return;
+		}
+
+		if (this.selected === null) {
+			this.selected = index;
+			sfx.playUi();
+			return;
+		}
+
+		const result = this.selected === index ? turn(this.board, index) : swap(this.board, this.selected, index);
+		if (!result) {
+			this.#refuse(index);
+			return;
+		}
+
+		if (this.phase === 'ready') this.#begin();
+		const before = this.board;
+		this.board = result.board;
+		this.history = [...this.history, result.move];
+		this.hintAt = null;
+
+		// Keep hold of the piece after turning it, so it can be turned again;
+		// let go after a trade, since the pair is now placed.
+		this.selected = result.move.kind === 'turn' ? index : null;
+
+		const move = result.move;
+		if (move.kind === 'turn') {
+			const settled =
+				this.board.rotations[move.tile] % 4 === 0 && this.board.cells[move.tile] === move.tile;
+			if (settled) sfx.playHome();
+			else sfx.playTurn(before.rotations[move.tile]);
+		} else if (move.kind === 'swap') {
+			const landed = this.board.cells[move.a] === move.a || this.board.cells[move.b] === move.b;
+			if (landed) sfx.playHome();
+			else sfx.playSlide(this.progress);
+		}
+
+		if (isSolved(this.board)) this.#finish();
+	}
+
+	/** Put down whatever is held, without changing the board. */
+	deselect(): void {
+		this.selected = null;
 	}
 
 	#refuse(index: number): void {
@@ -162,6 +231,7 @@ export class Session {
 		}
 		this.board = undo(this.board, last);
 		this.history = this.history.slice(0, -1);
+		this.selected = null;
 		sfx.playUnwind();
 	}
 

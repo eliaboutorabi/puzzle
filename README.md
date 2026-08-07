@@ -12,9 +12,12 @@ Pieces get out of true in two different ways, and a click does whatever the
 piece under it needs:
 
 - **Turning.** A piece facing the wrong way spins a quarter turn clockwise per
-  click. Four clicks bring it back where it started. Some boards have no empty
-  square at all — every piece is present, just pointing the wrong way, and the
-  whole puzzle is finding the right side for each one.
+  click. Four clicks bring it back where it started.
+- **Scattering.** Some boards have no empty square at all, so nothing can
+  slide. Click a piece to pick it up, click another to trade places, or click
+  the held piece again to turn it. `Esc` — or a tap on the frame — puts it back
+  down. Here a piece is in the wrong place *and* facing the wrong way, and you
+  have to find both.
 - **Sliding.** An upright piece beside the empty square slides into it. The
   **arrow keys** do this too.
 - **Hold `R`** (or the button) to unwind — every move reverses, turns included,
@@ -34,8 +37,9 @@ Each world adds exactly one rule and explains none of it.
 | World | Rule |
 | --- | --- |
 | Beginnings | Plain sliding. Rewind is free. |
-| The Turning | Nothing slides. Every piece is here, facing the wrong way. |
+| The Turning | Nothing slides. Wrong way up and in the wrong place — find both. |
 | The Unmoved | Some pieces cannot be moved at all. |
+| Odd Pieces | Interlocking cut pieces, scattered and turned. The hardest world. |
 | Hidden Hours | Slide and turn together — and the picture stays hidden until you finish. |
 | Hiccups | Time occasionally unwinds a step by itself. |
 
@@ -68,7 +72,7 @@ device. Clearing site data removes it.
 
 ### Board invariants
 
-Two things are guaranteed by construction rather than checked afterwards, both
+Four things are guaranteed by construction rather than checked afterwards, all
 in [`src/lib/game/board.ts`](src/lib/game/board.ts):
 
 1. **Solvability.** A random permutation of an n-puzzle is unsolvable half the
@@ -78,8 +82,23 @@ in [`src/lib/game/board.ts`](src/lib/game/board.ts):
    the shuffle routes around them, so every board can be walked back to solved.
 3. **Turnability.** Rotation is its own small group: four clicks always return a
    piece to where it started, so no amount of turning can strand a board.
+4. **Free permutation when scattering.** Sliding has a parity constraint, which
+   is why its shuffle walks the gap. Swapping has none — any two pieces may
+   trade — so a scattered board permutes outright and is still always solvable.
 
-Both are covered in [`board.test.ts`](src/lib/game/board.test.ts).
+All are covered in [`board.test.ts`](src/lib/game/board.test.ts), and the cut-piece
+invariants in [`jigsaw.test.ts`](src/lib/game/jigsaw.test.ts).
+
+### Cut pieces
+
+`src/lib/game/jigsaw.ts` builds the piece outlines. Edges are shared: where one
+piece takes a tab, its neighbour takes the matching blank, so the two mate
+exactly once both are placed and upright. A piece's shape belongs to its *home*
+position rather than travelling with it — the silhouette is the clue to where it
+belongs, and a rotated piece visibly stops interlocking.
+
+Outlines are SVG `clipPath`s in `objectBoundingBox` units, applied to a face
+drawn 1.5x the size of its cell so tabs have room to reach outside it.
 
 ## Running it
 

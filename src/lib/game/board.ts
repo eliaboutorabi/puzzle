@@ -10,8 +10,10 @@
  *
  *  - **sliding**: the empty cell walks, dragging tiles with it.
  *  - **turning**: a tile is knocked a quarter turn out of true, and clicking it
- *    turns it back. Turn-only boards have no empty cell at all — every piece is
- *    present, they are just facing the wrong way.
+ *    turns it back.
+ *  - **scattering**: pieces trade places. A scattered board has no empty cell,
+ *    so nothing can slide — you pick a piece and swap it with another, and you
+ *    have to find both the right way up and the right square.
  *
  * Three invariants are protected by construction rather than checked afterwards:
  *
@@ -27,10 +29,15 @@
  *     a tile to where it started, so no rotation can ever strand a board.
  */
 
+import { buildEdges, type PieceEdges } from './jigsaw';
+
 export type Cell = number | null;
 
 /** Which disturbances are in play on a board. */
-export type Mode = 'slide' | 'turn' | 'both';
+export type Mode = 'slide' | 'turn' | 'both' | 'scatter';
+
+/** Whether pieces are plain cells or cut with interlocking tabs. */
+export type Shape = 'square' | 'jigsaw';
 
 export interface Board {
 	readonly size: number;
@@ -41,12 +48,16 @@ export interface Board {
 	/** Tile ids that never move and never turn. Always home, always upright. */
 	readonly anchors: ReadonlySet<number>;
 	readonly mode: Mode;
+	readonly shape: Shape;
+	/** Piece outlines, indexed by home position. Empty when shape is 'square'. */
+	readonly edges: readonly PieceEdges[];
 }
 
 /** One step of history. Rewind replays these backward. */
 export type Move =
 	| { readonly kind: 'slide'; readonly from: number; readonly to: number; readonly tile: number }
-	| { readonly kind: 'turn'; readonly tile: number };
+	| { readonly kind: 'turn'; readonly tile: number }
+	| { readonly kind: 'swap'; readonly a: number; readonly b: number };
 
 export function emptyIndex(board: Board): number {
 	return board.cells.indexOf(null);
@@ -74,7 +85,7 @@ export function neighbours(board: Board, index: number): number[] {
 }
 
 export function canSlide(board: Board, index: number): boolean {
-	if (board.mode === 'turn') return false;
+	if (board.mode === 'turn' || board.mode === 'scatter') return false;
 	const tile = board.cells[index];
 	if (tile === null || tile === undefined) return false;
 	if (board.anchors.has(tile)) return false;
@@ -83,6 +94,14 @@ export function canSlide(board: Board, index: number): boolean {
 
 export function canTurn(board: Board, index: number): boolean {
 	if (board.mode === 'slide') return false;
+	const tile = board.cells[index];
+	if (tile === null || tile === undefined) return false;
+	return !board.anchors.has(tile);
+}
+
+/** Scattered boards have no empty cell, so pieces trade places instead. */
+export function canSwap(board: Board, index: number): boolean {
+	if (board.mode !== 'scatter') return false;
 	const tile = board.cells[index];
 	if (tile === null || tile === undefined) return false;
 	return !board.anchors.has(tile);
@@ -100,9 +119,14 @@ export function canTurn(board: Board, index: number): boolean {
  * could not be straightened at all until it was moved away, which is exactly
  * the kind of hidden rule this game should not have.
  */
-export function actionAt(board: Board, index: number): 'slide' | 'turn' | null {
+export function actionAt(board: Board, index: number): 'slide' | 'turn' | 'swap' | null {
 	const tile = board.cells[index];
 	if (tile === null || tile === undefined) return null;
+
+	// On a scattered board a click means "pick this up"; whether it then turns
+	// or trades places depends on what is already picked up, which the session
+	// tracks rather than the board.
+	if (board.mode === 'scatter') return canSwap(board, index) ? 'swap' : null;
 
 	const askew = board.rotations[tile] % 4 !== 0;
 	if (askew && canTurn(board, index)) return 'turn';
@@ -146,17 +170,25 @@ export function isSettled(board: Board, position: number): boolean {
 	return tile === position && board.rotations[tile] % 4 === 0;
 }
 
-export function solved(size: number, mode: Mode = 'slide', anchors: Iterable<number> = []): Board {
+export function solved(
+	size: number,
+	mode: Mode = 'slide',
+	anchors: Iterable<number> = [],
+	shape: Shape = 'square',
+	edges: readonly PieceEdges[] = []
+): Board {
 	const count = size * size;
 	const cells: Cell[] = Array.from({ length: count }, (_, i) => i);
-	// Turn-only boards keep every piece: nothing slides, so nothing needs a gap.
-	if (mode !== 'turn') cells[count - 1] = null;
+	// Only sliding needs a gap; turn and scatter boards keep every piece.
+	if (mode !== 'turn' && mode !== 'scatter') cells[count - 1] = null;
 	return {
 		size,
 		cells,
 		rotations: new Array(count).fill(0),
 		anchors: new Set(anchors),
-		mode
+		mode,
+		shape,
+		edges
 	};
 }
 
@@ -186,6 +218,15 @@ export function turn(board: Board, index: number): { board: Board; move: Move } 
 	};
 }
 
+/** Trade two pieces' positions. Their rotations travel with them. */
+export function swap(board: Board, a: number, b: number): { board: Board; move: Move } | null {
+	if (a === b) return null;
+	if (!canSwap(board, a) || !canSwap(board, b)) return null;
+	const cells = board.cells.slice();
+	[cells[a], cells[b]] = [cells[b], cells[a]];
+	return { board: { ...board, cells }, move: { kind: 'swap', a, b } };
+}
+
 /** Do whatever this cell affords. */
 export function act(board: Board, index: number): { board: Board; move: Move } | null {
 	const action = actionAt(board, index);
@@ -196,6 +237,12 @@ export function act(board: Board, index: number): { board: Board; move: Move } |
 
 /** Reverse a move. A turn is undone by three more turns — the group closes. */
 export function undo(board: Board, entry: Move): Board {
+	if (entry.kind === 'swap') {
+		// A swap is its own inverse.
+		const cells = board.cells.slice();
+		[cells[entry.a], cells[entry.b]] = [cells[entry.b], cells[entry.a]];
+		return { ...board, cells };
+	}
 	if (entry.kind === 'slide') {
 		const cells = board.cells.slice();
 		cells[entry.to] = entry.tile;
@@ -235,12 +282,17 @@ export interface ShuffleOptions {
 	anchors: number[];
 	/** Fraction of eligible tiles knocked out of true, 0-1. */
 	turnRatio?: number;
+	shape?: Shape;
 	random: () => number;
 }
 
 /**
  * Shuffle by walking the empty cell, never by permuting, then knock a share of
  * the tiles out of true. `steps` and `turnRatio` are the difficulty dials.
+ *
+ * Scattered boards are the exception, and safely so: they permute outright.
+ * Swaps have no parity constraint — any two pieces may trade — so every
+ * permutation is reachable back to solved, which is not true of sliding.
  */
 export function shuffle({
 	size,
@@ -248,11 +300,24 @@ export function shuffle({
 	steps,
 	anchors,
 	turnRatio = 0,
+	shape = 'square',
 	random
 }: ShuffleOptions): Board {
-	let board = solved(size, mode, anchors);
+	const edges = shape === 'jigsaw' ? buildEdges(size, random) : [];
+	let board = solved(size, mode, anchors, shape, edges);
 
-	if (mode !== 'turn') {
+	if (mode === 'scatter') {
+		// Fisher-Yates over the positions no anchor is sitting on.
+		const free = board.cells
+			.map((_, index) => index)
+			.filter((index) => !board.anchors.has(index));
+		const cells = board.cells.slice();
+		for (let i = free.length - 1; i > 0; i--) {
+			const j = Math.floor(random() * (i + 1));
+			[cells[free[i]], cells[free[j]]] = [cells[free[j]], cells[free[i]]];
+		}
+		board = { ...board, cells };
+	} else if (mode !== 'turn') {
 		let previousEmpty = -1;
 		for (let step = 0; step < steps; step++) {
 			// Avoid immediately undoing the last step, or the walk wanders in place
@@ -338,6 +403,15 @@ export function hint(board: Board): number | null {
 		(index) => canTurn(board, index) && board.rotations[board.cells[index]!] % 4 !== 0
 	);
 	if (askew !== undefined) return askew;
+
+	// Scattered boards cannot slide, so the only other useful nudge is a piece
+	// sitting on the wrong square.
+	if (board.mode === 'scatter') {
+		const misplaced = positions.find(
+			(index) => canSwap(board, index) && board.cells[index] !== index
+		);
+		return misplaced ?? null;
+	}
 
 	const empty = emptyIndex(board);
 	const moves = legalMoves(board);

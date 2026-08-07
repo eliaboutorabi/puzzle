@@ -3,10 +3,12 @@ import {
 	act,
 	actionAt,
 	canSlide,
+	canSwap,
 	canTurn,
 	emptyIndex,
 	hint,
 	homeCount,
+	inPlace,
 	isSolved,
 	isUpright,
 	legalMoves,
@@ -16,6 +18,7 @@ import {
 	shuffle,
 	slide,
 	solved,
+	swap,
 	turn,
 	undo,
 	type Move
@@ -124,6 +127,113 @@ describe('turning', () => {
 		const turned = board.rotations.filter((r) => r !== 0);
 		expect(turned.length).toBeGreaterThan(0);
 		expect(turned.every((r) => r >= 1 && r <= 3)).toBe(true);
+	});
+});
+
+describe('scattered boards', () => {
+	const scatter = (seed = 5, anchors: number[] = []) =>
+		shuffle({
+			size: 4,
+			mode: 'scatter',
+			steps: 0,
+			anchors,
+			turnRatio: 0.6,
+			random: seededRandom(seed)
+		});
+
+	it('has no empty cell: every piece stays on the board', () => {
+		const board = scatter();
+		expect(emptyIndex(board)).toBe(-1);
+		expect(board.cells.filter((c) => c === null)).toHaveLength(0);
+		expect(new Set(board.cells).size).toBe(16);
+	});
+
+	it('cannot slide, only swap and turn', () => {
+		const board = scatter();
+		expect(legalMoves(board)).toEqual([]);
+		expect(canSlide(board, 0)).toBe(false);
+		expect(canSwap(board, 0)).toBe(true);
+		expect(actionAt(board, 0)).toBe('swap');
+	});
+
+	it('scrambles both place and facing', () => {
+		for (let seed = 1; seed < 25; seed++) {
+			const board = scatter(seed);
+			expect(isSolved(board)).toBe(false);
+			expect(inPlace(board)).toBe(false);
+			expect(isUpright(board)).toBe(false);
+		}
+	});
+
+	it('trades two pieces, and a swap is its own inverse', () => {
+		const board = scatter();
+		const before = board.cells.slice();
+		const once = swap(board, 2, 9)!;
+		expect(once.board.cells[2]).toBe(before[9]);
+		expect(once.board.cells[9]).toBe(before[2]);
+		expect(swap(once.board, 2, 9)!.board.cells).toEqual(before);
+		expect(undo(once.board, once.move).cells).toEqual(before);
+	});
+
+	it('refuses to swap a piece with itself', () => {
+		expect(swap(scatter(), 4, 4)).toBeNull();
+	});
+
+	it('leaves anchored pieces out of it entirely', () => {
+		const anchors = [5];
+		const board = scatter(3, anchors);
+		expect(board.cells[5]).toBe(5);
+		expect(canSwap(board, 5)).toBe(false);
+		expect(swap(board, 5, 6)).toBeNull();
+		expect(actionAt(board, 5)).toBeNull();
+	});
+
+	/**
+	 * Sliding has a parity constraint — half of all permutations are
+	 * unreachable — which is why the slide shuffle walks the gap. Swapping has
+	 * no such constraint, so permuting outright is safe here.
+	 */
+	it('any scramble can be walked back to solved by swaps alone', () => {
+		for (let seed = 1; seed < 20; seed++) {
+			let board = shuffle({
+				size: 4,
+				mode: 'scatter',
+				steps: 0,
+				anchors: [],
+				turnRatio: 0,
+				random: seededRandom(seed)
+			});
+			for (let target = 0; target < 16; target++) {
+				const at = board.cells.indexOf(target);
+				if (at !== target) board = swap(board, at, target)!.board;
+			}
+			expect(inPlace(board)).toBe(true);
+		}
+	});
+
+	it('cuts jigsaw pieces only when asked', () => {
+		const plain = scatter();
+		expect(plain.shape).toBe('square');
+		expect(plain.edges).toHaveLength(0);
+
+		const cut = shuffle({
+			size: 4,
+			mode: 'scatter',
+			steps: 0,
+			anchors: [],
+			turnRatio: 0.5,
+			shape: 'jigsaw',
+			random: seededRandom(11)
+		});
+		expect(cut.shape).toBe('jigsaw');
+		expect(cut.edges).toHaveLength(16);
+	});
+
+	it('hints at a piece sitting on the wrong square', () => {
+		const board = scatter();
+		const suggestion = hint(board)!;
+		expect(suggestion).not.toBeNull();
+		expect(canSwap(board, suggestion)).toBe(true);
 	});
 });
 
