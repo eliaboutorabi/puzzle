@@ -20,6 +20,7 @@ import {
 	FlashIcon,
 	FlashOffIcon,
 	FrameIcon,
+	GithubIcon,
 	HangerIcon,
 	Idea01Icon,
 	ImageAdd01Icon,
@@ -41,6 +42,7 @@ export const icons = {
 	music: MusicNote01Icon,
 
 	// Navigation
+	github: GithubIcon,
 	back: ArrowLeft02Icon,
 	next: ArrowRight02Icon,
 	attic: FrameIcon,

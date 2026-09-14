@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '$lib/styles/app.css';
 	import * as sfx from '$lib/audio/sfx';
+	import SiteFooter from '$lib/components/SiteFooter.svelte';
 	import SoundToggle from '$lib/components/SoundToggle.svelte';
 	import { settings } from '$lib/state/settings.svelte';
 
@@ -21,4 +22,5 @@
 
 {@render children()}
 
+<SiteFooter />
 <SoundToggle />

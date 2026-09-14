@@ -210,8 +210,9 @@ button.ghost {
 	max-width: 1080px;
 	margin: 0 auto;
 	padding: clamp(1.2rem, 4vw, 2.6rem);
-	/* Room for the floating sound control so it never sits on top of content. */
-	padding-bottom: calc(clamp(1.2rem, 4vw, 2.6rem) + 4rem);
+	/* The site footer sits below this and keeps clear of the floating sound
+	   control itself, so no extra room is needed here. */
+	padding-bottom: 0;
 }
 
 .muted {
