@@ -132,7 +132,7 @@ export const DIFFICULTIES: readonly Difficulty[] = [
 	{
 		id: 'gentle',
 		title: 'Gentle',
-		note: '3 x 3 · the picture waits underneath',
+		note: '3 x 3 · a faint picture beneath',
 		size: 3,
 		steps: 40,
 		hints: -1,

@@ -28,7 +28,7 @@
 
 <svelte:head><title>Unwind — a slow puzzle about turning things back</title></svelte:head>
 
-<div class="shell stack" style="gap: 2.2rem">
+<div class="shell stack" style="gap: 1.8rem">
 	<header class="hero">
 		<p class="kicker">A puzzle where nothing is ever lost</p>
 		<h1>Unwind</h1>
@@ -41,7 +41,7 @@
 	<section class="setup">
 		<div class="stack" style="gap: 0.7rem">
 			<h2>How hard?</h2>
-			<div class="row">
+			<div class="choices">
 				{#each DIFFICULTIES as difficulty (difficulty.id)}
 					<button
 						class="chip"
@@ -162,7 +162,7 @@
 
 <style>
 	.hero {
-		padding-block: clamp(1.5rem, 8vh, 4rem) 0.5rem;
+		padding-block: clamp(0.5rem, 2vh, 1.4rem) 0.25rem;
 		text-align: center;
 	}
 
@@ -182,17 +182,20 @@
 		filter: drop-shadow(0 10px 26px rgba(138, 105, 208, 0.35));
 	}
 
+	/* Two side-by-side columns left a large void under the short one, so these
+	   stack full width instead. It is also shorter overall, because the
+	   difficulty chips now sit in a row rather than a column. */
 	.setup {
-		display: grid;
-		gap: 1.6rem;
-		grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
+		gap: 1.4rem;
 	}
 
-	@media (min-width: 760px) {
-		.setup {
-			grid-template-columns: 1fr 1fr;
-			align-items: start;
-		}
+	/* Equal columns: chips sized to their own text produced a ragged staircase. */
+	.choices {
+		display: grid;
+		gap: 0.6rem;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
 	}
 
 	h2 {
