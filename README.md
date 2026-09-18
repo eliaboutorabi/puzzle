@@ -57,14 +57,20 @@ device. Clearing site data removes it.
 ## How it is built
 
 - **SvelteKit** with `adapter-static` — fully prerendered, no server at runtime
-- **No image assets.** The nine gallery pictures are drawn procedurally on a
-  canvas, which keeps the deploy tiny and sidesteps licensing entirely. Each is
-  its own scene rather than one composition recoloured — hills, aurora,
-  balloons, a flower field, an ocean sunrise, rainbow arcs, a night city, dunes,
-  a citrus grove. Two rules they all follow come from what a *puzzle* needs:
-  detail everywhere (a flat region makes several tiles identical, which is
-  tedious rather than hard) and colour that shifts across the frame, so a tile
-  can be placed from its colour alone
+- **No image assets.** The ten gallery pictures are cute animals drawn
+  procedurally on a canvas, which keeps the deploy tiny and sidesteps licensing
+  entirely — a cat, panda, fox, owl, bunny, frog, penguin, bear, axolotl and
+  chick, each its own drawing rather than one recoloured. Two rules they all
+  follow come from what a *puzzle* needs rather than from what looks nice:
+  detail everywhere and colour that shifts across the frame, so a tile can be
+  placed from its colour alone. An animal centred on a flat background is the
+  trap here — every background tile comes out identical — so each animal fills
+  its frame, the space around it carries scattered motifs placed on a jittered
+  grid (uniform random leaves bare patches), and a final pass lays dappled
+  light over the whole picture. That pass multiplies rather than soft-lights,
+  because soft-light barely moves a white pixel and a panda's white belly was
+  the worst offender: it took the hardest-to-place tile pair from
+  indistinguishable to comfortably apart
 - **No audio assets.** Music and effects are synthesised with the Web Audio API.
   The theme is rendered once into an `AudioBuffer`, and rewinding plays a
   sample-reversed copy of it

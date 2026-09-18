@@ -1,17 +1,19 @@
 /**
  * The built-in gallery is painted in code rather than shipped as files.
  *
- * That keeps the deploy tiny and sidesteps image licensing entirely. Each
- * painting is its own scene rather than one composition recoloured, because a
- * gallery of six recolours reads as one picture in six moods.
+ * That keeps the deploy tiny and sidesteps image licensing entirely. Every
+ * picture is a cute animal, and each is its own scene rather than one drawing
+ * recoloured.
  *
- * Two rules every scene here follows, both driven by what a puzzle needs:
+ * Two rules every scene follows, both driven by what a *puzzle* needs rather
+ * than by what looks nice on its own:
  *
- *  1. **Detail everywhere.** A large flat region makes several tiles look
- *     identical, which is tedious rather than difficult. Skies get stars,
- *     motes or clouds; ground gets texture.
+ *  1. **Detail everywhere.** A big animal centred on a flat background is the
+ *     classic mistake here: every background tile looks the same, which is
+ *     tedious rather than difficult. So the animal fills most of the frame and
+ *     the space around it carries scattered motifs.
  *  2. **Colour that varies across the frame.** A tile should be placeable from
- *     its colour alone, so hue shifts corner to corner.
+ *     its colour alone, so the ground shifts hue corner to corner.
  */
 
 export interface Painting {
@@ -20,532 +22,669 @@ export interface Painting {
 	readonly paint: (ctx: CanvasRenderingContext2D, size: number, random: () => number) => void;
 }
 
+const TAU = Math.PI * 2;
+const INK = '#3d3348';
+
 /* ------------------------------------------------------------- helpers -- */
 
-function sky(
-	ctx: CanvasRenderingContext2D,
-	size: number,
-	stops: readonly string[],
-	height = size
-): void {
-	const gradient = ctx.createLinearGradient(0, 0, 0, height);
+function wash(ctx: CanvasRenderingContext2D, size: number, stops: readonly string[]): void {
+	const gradient = ctx.createLinearGradient(0, 0, size * 0.35, size);
 	stops.forEach((colour, index) => gradient.addColorStop(index / (stops.length - 1), colour));
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, size, size);
 }
 
-/** A soft disc of light, used for suns, moons and lamps. */
-function glow(
+function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fill: string): void {
+	ctx.fillStyle = fill;
+	ctx.beginPath();
+	ctx.arc(x, y, r, 0, TAU);
+	ctx.fill();
+}
+
+function oval(
 	ctx: CanvasRenderingContext2D,
 	x: number,
 	y: number,
-	radius: number,
-	core: string,
-	spread = 6
+	rx: number,
+	ry: number,
+	rotation: number,
+	fill: string
 ): void {
-	const bloom = ctx.createRadialGradient(x, y, 0, x, y, radius * spread);
-	bloom.addColorStop(0, core);
-	bloom.addColorStop(0.1, withAlpha(core, 0.5));
-	bloom.addColorStop(1, withAlpha(core, 0));
-	ctx.fillStyle = bloom;
-	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-	ctx.fillStyle = core;
+	ctx.fillStyle = fill;
 	ctx.beginPath();
-	ctx.arc(x, y, radius, 0, Math.PI * 2);
+	ctx.ellipse(x, y, rx, ry, rotation, 0, TAU);
 	ctx.fill();
 }
 
-/** A wavy horizon, filled to the bottom of the frame. */
-function ridge(
-	ctx: CanvasRenderingContext2D,
-	size: number,
-	colour: string,
-	baseline: number,
-	amplitude: number,
-	wavelength: number,
-	phase: number
-): number[] {
-	const heights: number[] = [];
-	ctx.fillStyle = colour;
+/** A big shiny eye: dark oval, bright catchlight, small secondary glint. */
+function eye(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+	oval(ctx, x, y, r * 0.86, r, 0, INK);
+	disc(ctx, x - r * 0.3, y - r * 0.38, r * 0.32, '#ffffff');
+	disc(ctx, x + r * 0.26, y + r * 0.3, r * 0.15, 'rgba(255,255,255,0.75)');
+}
+
+function blush(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, colour: string): void {
+	const glow = ctx.createRadialGradient(x, y, 0, x, y, r);
+	glow.addColorStop(0, colour);
+	glow.addColorStop(1, colour.replace(/[\d.]+\)$/, '0)'));
+	ctx.fillStyle = glow;
 	ctx.beginPath();
-	ctx.moveTo(0, size);
-	for (let x = 0; x <= size; x += 3) {
-		const t = (x / size) * Math.PI * 2 * wavelength + phase;
-		const y = baseline + Math.sin(t) * amplitude + Math.sin(t * 2.7) * amplitude * 0.3;
-		heights[x] = y;
-		ctx.lineTo(x, y);
-	}
-	ctx.lineTo(size, size);
+	ctx.arc(x, y, r, 0, TAU);
+	ctx.fill();
+}
+
+/** The little "w" every cute muzzle needs. */
+function smile(ctx: CanvasRenderingContext2D, x: number, y: number, w: number): void {
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = w * 0.16;
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	ctx.arc(x - w * 0.5, y, w * 0.5, 0.15 * Math.PI, 0.85 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(x + w * 0.5, y, w * 0.5, 0.15 * Math.PI, 0.85 * Math.PI);
+	ctx.stroke();
+}
+
+function nose(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, fill: string): void {
+	ctx.fillStyle = fill;
+	ctx.beginPath();
+	ctx.moveTo(x - w, y - w * 0.6);
+	ctx.lineTo(x + w, y - w * 0.6);
+	ctx.quadraticCurveTo(x, y + w * 0.95, x, y + w * 0.95);
 	ctx.closePath();
 	ctx.fill();
-	return heights;
 }
 
-function stars(
+function pointyEar(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	r: number,
+	lean: number,
+	outer: string,
+	inner: string
+): void {
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.rotate(lean);
+	ctx.fillStyle = outer;
+	ctx.beginPath();
+	ctx.moveTo(-r, r * 0.9);
+	ctx.quadraticCurveTo(-r * 0.2, -r * 1.25, r, r * 0.9);
+	ctx.closePath();
+	ctx.fill();
+	ctx.fillStyle = inner;
+	ctx.beginPath();
+	ctx.moveTo(-r * 0.5, r * 0.75);
+	ctx.quadraticCurveTo(-r * 0.1, -r * 0.5, r * 0.5, r * 0.75);
+	ctx.closePath();
+	ctx.fill();
+	ctx.restore();
+}
+
+function roundEar(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	r: number,
+	outer: string,
+	inner: string
+): void {
+	disc(ctx, x, y, r, outer);
+	disc(ctx, x, y, r * 0.55, inner);
+}
+
+/**
+ * Scatters a motif across the whole frame. This is what stops background tiles
+ * being interchangeable, so the count matters more than the drawing.
+ */
+function scatter(
 	ctx: CanvasRenderingContext2D,
 	size: number,
 	random: () => number,
 	count: number,
-	limit: number
+	draw: (x: number, y: number, s: number, rotation: number) => void
 ): void {
-	for (let i = 0; i < count; i++) {
-		const x = random() * size;
-		const y = random() * size * limit;
-		const r = size * (0.0012 + random() * 0.0035);
-		ctx.globalAlpha = 0.25 + random() * 0.7;
-		ctx.fillStyle = random() < 0.25 ? '#ffe9a8' : '#ffffff';
-		ctx.beginPath();
-		ctx.arc(x, y, r, 0, Math.PI * 2);
-		ctx.fill();
-	}
-	ctx.globalAlpha = 1;
-}
+	// Jittered grid rather than uniform random. Pure random leaves bare patches
+	// by chance, and two bare background tiles are exactly the pair a player
+	// cannot place. One motif per cell guarantees every region carries
+	// something, while the jitter keeps it from looking like wallpaper.
+	const columns = Math.max(1, Math.ceil(Math.sqrt(count)));
+	const step = size / columns;
+	let placed = 0;
 
-function withAlpha(colour: string, alpha: number): string {
-	const value = colour.replace('#', '');
-	const r = parseInt(value.slice(0, 2), 16);
-	const g = parseInt(value.slice(2, 4), 16);
-	const b = parseInt(value.slice(4, 6), 16);
-	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-const hsl = (h: number, s: number, l: number, a = 1) => `hsla(${h}, ${s}%, ${l}%, ${a})`;
-
-/* ------------------------------------------------------------- scenes --- */
-
-const sunsetHills: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#ffd76b', '#ff9f57', '#ff6b8a', '#c14fa0']);
-	glow(ctx, size * (0.3 + random() * 0.4), size * 0.34, size * 0.075, '#fff6c8', 7);
-
-	const hues = [330, 315, 288, 262, 238];
-	hues.forEach((hue, index) => {
-		const depth = index / (hues.length - 1);
-		const heights = ridge(
-			ctx,
-			size,
-			hsl(hue, 62 - depth * 18, 62 - depth * 42),
-			size * (0.46 + depth * 0.44),
-			size * (0.1 - depth * 0.05),
-			1.1 + random() * 1.8,
-			random() * Math.PI * 2
-		);
-
-		// Trees on the two nearest ridges, so the foreground is never flat.
-		if (index >= hues.length - 3) {
-			ctx.fillStyle = hsl(hue - 8, 55, Math.max(10, 52 - depth * 42));
-			for (let tree = 0; tree < 10 + Math.floor(random() * 8); tree++) {
-				const x = Math.round(random() * (size - 1));
-				const y = heights[x - (x % 3)] ?? size * 0.7;
-				const h = size * (0.03 + random() * 0.06);
-				const w = h * (0.22 + random() * 0.16);
-				ctx.beginPath();
-				ctx.moveTo(x, y - h);
-				ctx.lineTo(x + w, y + 2);
-				ctx.lineTo(x - w, y + 2);
-				ctx.closePath();
-				ctx.fill();
-			}
-		}
-	});
-};
-
-const aurora: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#0b1033', '#152257', '#1d3b74', '#27607e']);
-	stars(ctx, size, random, 220, 0.8);
-
-	// Ribbons of light, each a vertical gradient so they fade as they fall.
-	const ribbons = [
-		{ hue: 150, y: 0.24 },
-		{ hue: 176, y: 0.32 },
-		{ hue: 280, y: 0.2 },
-		{ hue: 108, y: 0.4 }
-	];
-	ctx.globalCompositeOperation = 'lighter';
-	for (const { hue, y } of ribbons) {
-		const phase = random() * Math.PI * 2;
-		const amp = size * (0.05 + random() * 0.06);
-		for (let pass = 0; pass < 5; pass++) {
-			const fade = ctx.createLinearGradient(0, size * y - amp, 0, size * (y + 0.34));
-			fade.addColorStop(0, hsl(hue, 90, 62, 0.34));
-			fade.addColorStop(1, hsl(hue + 20, 90, 55, 0));
-			ctx.strokeStyle = fade;
-			ctx.lineWidth = size * (0.05 - pass * 0.007);
-			ctx.beginPath();
-			for (let x = 0; x <= size; x += 4) {
-				const t = (x / size) * Math.PI * 2 * 1.3 + phase + pass * 0.14;
-				const yy = size * y + Math.sin(t) * amp + Math.sin(t * 2.2) * amp * 0.4;
-				if (x === 0) ctx.moveTo(x, yy);
-				else ctx.lineTo(x, yy);
-			}
-			ctx.stroke();
+	for (let row = 0; row < columns && placed < count; row++) {
+		for (let col = 0; col < columns && placed < count; col++) {
+			const x = (col + 0.15 + random() * 0.7) * step;
+			const y = (row + 0.15 + random() * 0.7) * step;
+			const s = size * (0.012 + random() * 0.03);
+			ctx.save();
+			draw(x, y, s, random() * TAU);
+			ctx.restore();
+			placed++;
 		}
 	}
-	ctx.globalCompositeOperation = 'source-over';
+}
 
-	// Snow peaks catching the aurora, then their reflection.
-	ctx.fillStyle = '#0d1730';
+/* ------------------------------------------------------- motif drawers -- */
+
+function star(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, fill: string): void {
+	ctx.fillStyle = fill;
 	ctx.beginPath();
-	ctx.moveTo(0, size);
-	ctx.lineTo(0, size * 0.72);
-	for (let peak = 0; peak <= 6; peak++) {
-		const x = (peak / 6) * size;
-		const y = size * (0.62 + (peak % 2 === 0 ? 0.1 : -0.04) + random() * 0.05);
-		ctx.lineTo(x, y);
+	for (let i = 0; i < 8; i++) {
+		const angle = (i / 8) * TAU;
+		const radius = i % 2 === 0 ? s : s * 0.36;
+		ctx.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
 	}
-	ctx.lineTo(size, size);
 	ctx.closePath();
 	ctx.fill();
+}
 
-	ctx.fillStyle = hsl(190, 60, 26);
-	ctx.fillRect(0, size * 0.84, size, size * 0.16);
-	ctx.globalAlpha = 0.35;
-	for (let band = 0; band < 22; band++) {
-		ctx.fillStyle = hsl(150 + random() * 130, 80, 55);
-		const y = size * 0.84 + random() * size * 0.16;
-		ctx.fillRect(random() * size * 0.7, y, size * (0.1 + random() * 0.3), size * 0.006);
-	}
-	ctx.globalAlpha = 1;
-};
+function leaf(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	s: number,
+	rotation: number,
+	fill: string
+): void {
+	ctx.translate(x, y);
+	ctx.rotate(rotation);
+	ctx.fillStyle = fill;
+	ctx.beginPath();
+	ctx.moveTo(-s, 0);
+	ctx.quadraticCurveTo(0, -s * 0.8, s, 0);
+	ctx.quadraticCurveTo(0, s * 0.8, -s, 0);
+	ctx.fill();
+}
 
-const balloonSky: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#63c8f5', '#9adcf7', '#cfeffb', '#ffe6c4']);
-
-	// Clouds, so the sky is never an empty pane.
-	ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-	for (let cloud = 0; cloud < 9; cloud++) {
-		const cx = random() * size;
-		const cy = size * (0.1 + random() * 0.75);
-		const scale = size * (0.05 + random() * 0.06);
-		for (let puff = 0; puff < 5; puff++) {
-			ctx.beginPath();
-			ctx.arc(
-				cx + (puff - 2) * scale * 0.5,
-				cy + Math.sin(puff) * scale * 0.14,
-				scale * (0.45 + random() * 0.3),
-				0,
-				Math.PI * 2
-			);
-			ctx.fill();
-		}
-	}
-
-	const hues = [0, 32, 52, 120, 190, 262, 310, 16, 88, 220, 340, 44];
-	for (let i = 0; i < hues.length; i++) {
-		const x = size * (0.08 + random() * 0.84);
-		const y = size * (0.1 + random() * 0.72);
-		const r = size * (0.045 + random() * 0.055);
-		const hue = hues[i];
-
-		// Envelope: three coloured gores so each balloon reads as striped.
-		for (let gore = 0; gore < 3; gore++) {
-			ctx.fillStyle = hsl(hue + gore * 14, 82, 58 + gore * 6);
-			ctx.beginPath();
-			ctx.moveTo(x, y + r * 1.5);
-			ctx.arc(x, y, r, Math.PI * (0.5 + gore / 3), Math.PI * (0.5 + (gore + 1) / 3), false);
-			ctx.closePath();
-			ctx.fill();
-		}
-		ctx.fillStyle = hsl(hue, 70, 40);
-		ctx.fillRect(x - r * 0.16, y + r * 1.42, r * 0.32, r * 0.26);
-	}
-};
-
-const flowerField: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#7fd0ff', '#b6e7ff', '#e8f7d8']);
-	glow(ctx, size * 0.78, size * 0.16, size * 0.05, '#fffbe0', 5);
-
-	// Rolling green, light at the back and deep at the front.
-	for (let band = 0; band < 4; band++) {
-		const depth = band / 3;
-		ridge(
-			ctx,
-			size,
-			hsl(95 - depth * 20, 52 + depth * 14, 62 - depth * 26),
-			size * (0.42 + depth * 0.2),
-			size * 0.045,
-			1 + random(),
-			random() * Math.PI * 2
-		);
-	}
-
-	// Flowers: bigger and denser toward the front, which reads as depth.
-	const hues = [0, 46, 300, 274, 20, 330, 58];
-	for (let i = 0; i < 340; i++) {
-		const y = size * (0.44 + random() * 0.56);
-		const depth = (y / size - 0.44) / 0.56;
-		const x = random() * size;
-		const r = size * (0.004 + depth * 0.012);
-		const hue = hues[Math.floor(random() * hues.length)];
-
-		ctx.fillStyle = hsl(hue, 88, 62 + random() * 16);
-		for (let petal = 0; petal < 5; petal++) {
-			const angle = (petal / 5) * Math.PI * 2;
-			ctx.beginPath();
-			ctx.arc(x + Math.cos(angle) * r, y + Math.sin(angle) * r, r * 0.78, 0, Math.PI * 2);
-			ctx.fill();
-		}
-		ctx.fillStyle = hsl(48, 95, 66);
+function paw(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, fill: string): void {
+	ctx.fillStyle = fill;
+	ctx.beginPath();
+	ctx.ellipse(x, y + s * 0.35, s * 0.62, s * 0.5, 0, 0, TAU);
+	ctx.fill();
+	for (let i = 0; i < 4; i++) {
+		const angle = Math.PI + (i + 0.5) * (Math.PI / 4);
 		ctx.beginPath();
-		ctx.arc(x, y, r * 0.55, 0, Math.PI * 2);
+		ctx.ellipse(x + Math.cos(angle) * s * 0.65, y + Math.sin(angle) * s * 0.65, s * 0.2, s * 0.26, 0, 0, TAU);
 		ctx.fill();
 	}
-};
+}
 
-const oceanSunrise: Painting['paint'] = (ctx, size, random) => {
-	const horizon = size * 0.46;
-	sky(ctx, size, ['#3b1d63', '#a83a76', '#ff7a5c', '#ffd08a'], horizon);
+function bubble(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, fill: string): void {
+	ctx.strokeStyle = fill;
+	ctx.lineWidth = s * 0.16;
+	ctx.beginPath();
+	ctx.arc(x, y, s, 0, TAU);
+	ctx.stroke();
+}
 
-	const sunX = size * 0.5;
-	glow(ctx, sunX, horizon - size * 0.03, size * 0.085, '#fff3c4', 6);
+function heart(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, fill: string): void {
+	ctx.fillStyle = fill;
+	ctx.beginPath();
+	ctx.moveTo(x, y + s * 0.7);
+	ctx.bezierCurveTo(x - s * 1.4, y - s * 0.4, x - s * 0.35, y - s * 1.1, x, y - s * 0.3);
+	ctx.bezierCurveTo(x + s * 0.35, y - s * 1.1, x + s * 1.4, y - s * 0.4, x, y + s * 0.7);
+	ctx.fill();
+}
 
-	// Sea.
-	const water = ctx.createLinearGradient(0, horizon, 0, size);
-	water.addColorStop(0, '#ff9a6a');
-	water.addColorStop(0.25, '#c8567f');
-	water.addColorStop(0.6, '#5b2d78');
-	water.addColorStop(1, '#241448');
-	ctx.fillStyle = water;
-	ctx.fillRect(0, horizon, size, size - horizon);
-
-	// The sun's path on the water: bright near the horizon, scattering outward.
-	for (let i = 0; i < 150; i++) {
-		const t = random();
-		const y = horizon + t * (size - horizon);
-		const spread = size * (0.03 + t * 0.42);
-		const x = sunX + (random() - 0.5) * spread * 2;
-		const w = size * (0.02 + random() * 0.11) * (1 - t * 0.4);
-		ctx.globalAlpha = (1 - t) * 0.55 + 0.08;
-		ctx.fillStyle = t < 0.4 ? '#ffe9a8' : '#ffb27a';
-		ctx.fillRect(x - w / 2, y, w, size * 0.005);
-	}
-
-	// Swell lines across the whole sea, so no tile is a flat wash.
-	ctx.globalAlpha = 0.2;
-	ctx.fillStyle = '#ffd2b0';
-	for (let i = 0; i < 70; i++) {
-		const y = horizon + random() * (size - horizon);
-		ctx.fillRect(random() * size, y, size * (0.04 + random() * 0.16), size * 0.0035);
-	}
-	ctx.globalAlpha = 1;
-
-	// Clouds catching the light. Ellipses, not bars: a filled rectangle up here
-	// reads as a glitch rather than as weather.
-	ctx.globalAlpha = 0.45;
-	for (let i = 0; i < 10; i++) {
-		ctx.fillStyle = hsl(300 + random() * 50, 75, 68);
-		const cx = random() * size;
-		const cy = random() * horizon * 0.85;
-		const w = size * (0.06 + random() * 0.16);
-		for (let puff = 0; puff < 3; puff++) {
-			ctx.beginPath();
-			ctx.ellipse(
-				cx + (puff - 1) * w * 0.5,
-				cy + Math.sin(puff) * size * 0.006,
-				w * (0.5 + random() * 0.3),
-				size * (0.008 + random() * 0.012),
-				0,
-				0,
-				Math.PI * 2
-			);
-			ctx.fill();
-		}
-	}
-	ctx.globalAlpha = 1;
-};
-
-const rainbowArcs: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#fff6e8', '#ffe6d0', '#ffd8e2']);
-
-	// Concentric bands from the lower-left corner: every tile lands on a
-	// different set of colours, which makes this the friendliest to solve.
-	const cx = size * 0.08;
-	const cy = size * 0.96;
-	const bands = 13;
-	for (let i = bands; i >= 0; i--) {
-		const hue = (i / bands) * 320;
-		ctx.strokeStyle = hsl(hue, 85, 62);
-		ctx.lineWidth = size * 0.055;
+function flake(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, fill: string): void {
+	ctx.strokeStyle = fill;
+	ctx.lineWidth = s * 0.2;
+	ctx.lineCap = 'round';
+	for (let i = 0; i < 3; i++) {
+		const angle = (i / 3) * Math.PI;
 		ctx.beginPath();
-		ctx.arc(cx, cy, size * 0.12 + i * size * 0.078, 0, Math.PI * 2);
+		ctx.moveTo(x - Math.cos(angle) * s, y - Math.sin(angle) * s);
+		ctx.lineTo(x + Math.cos(angle) * s, y + Math.sin(angle) * s);
 		ctx.stroke();
 	}
+}
 
-	// Dots scattered over the arcs to break up the bands.
-	for (let i = 0; i < 220; i++) {
+/**
+ * A corner-to-corner light ramp, laid over the finished drawing.
+ *
+ * Large flat regions are what make a puzzle tedious: at 5x5 several tiles of
+ * one animal's body come out indistinguishable. Soft-light keeps the hues but
+ * makes brightness depend on position, so those tiles stop being clones.
+ */
+function depthWash(ctx: CanvasRenderingContext2D, size: number, random: () => number): void {
+	ctx.save();
+	ctx.globalCompositeOperation = 'soft-light';
+	const ramp = ctx.createLinearGradient(0, 0, size, size);
+	ramp.addColorStop(0, 'rgba(255,255,255,0.7)');
+	ramp.addColorStop(0.45, 'rgba(255,255,255,0.05)');
+	ramp.addColorStop(1, 'rgba(35,15,60,0.6)');
+	ctx.fillStyle = ramp;
+	ctx.fillRect(0, 0, size, size);
+
+	// A second, crosswise ramp so the two diagonals differ too.
+	const cross = ctx.createLinearGradient(size, 0, 0, size);
+	cross.addColorStop(0, 'rgba(255,200,120,0.35)');
+	cross.addColorStop(1, 'rgba(120,160,255,0.35)');
+	ctx.fillStyle = cross;
+	ctx.fillRect(0, 0, size, size);
+
+	/*
+	 * Dappled light. The corner ramps above separate distant tiles but leave
+	 * neighbours inside one flat region — the middle of a panda's white belly —
+	 * indistinguishable, and those are exactly the tiles a player cannot place.
+	 *
+	 * These blobs multiply rather than soft-light. Soft-light barely moves a
+	 * white pixel, which is the case that needed help most; multiplying by a
+	 * near-white tint shifts it a few percent, enough to tell two tiles apart
+	 * while still reading as gentle light rather than as dirt.
+	 */
+	ctx.globalCompositeOperation = 'multiply';
+	const tints = ['#fff0dd', '#e7ecfb', '#ffe6ee', '#e6f7ee'];
+	for (let i = 0; i < 22; i++) {
 		const x = random() * size;
 		const y = random() * size;
-		ctx.globalAlpha = 0.13 + random() * 0.3;
-		ctx.fillStyle = random() < 0.5 ? '#ffffff' : '#3a2140';
+		const r = size * (0.14 + random() * 0.2);
+		const tint = tints[Math.floor(random() * tints.length)];
+		const blob = ctx.createRadialGradient(x, y, 0, x, y, r);
+		blob.addColorStop(0, tint);
+		blob.addColorStop(1, 'rgba(255,255,255,0)');
+		ctx.fillStyle = blob;
 		ctx.beginPath();
-		ctx.arc(x, y, size * (0.003 + random() * 0.009), 0, Math.PI * 2);
+		ctx.arc(x, y, r, 0, TAU);
 		ctx.fill();
 	}
-	ctx.globalAlpha = 1;
-};
+	ctx.restore();
+}
 
-const nightCity: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#160f3d', '#33206b', '#7a3480', '#e0736c']);
-	stars(ctx, size, random, 160, 0.55);
-	glow(ctx, size * 0.2, size * 0.18, size * 0.05, '#fff4d6', 5);
+/* -------------------------------------------------------------- scenes -- */
 
-	// Skyline, back row hazier than the front.
-	for (let row = 0; row < 2; row++) {
-		let x = -size * 0.05;
-		const base = size * (row === 0 ? 0.78 : 0.98);
-		while (x < size) {
-			const w = size * (0.06 + random() * 0.1);
-			const h = size * (0.14 + random() * (row === 0 ? 0.24 : 0.4));
-			const top = base - h;
-			ctx.fillStyle = row === 0 ? hsl(268, 40, 22) : hsl(258, 45, 12);
-			ctx.fillRect(x, top, w, base - top);
+const cat: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#ffe2c9', '#ffc9b4', '#f9a58f']);
+	scatter(ctx, size, random, 74, (x, y, s) => paw(ctx, x, y, s, 'rgba(255,255,255,0.45)'));
+	scatter(ctx, size, random, 35, (x, y, s) => heart(ctx, x, y, s * 0.8, 'rgba(255,120,110,0.28)'));
 
-			// Lit windows: the colour variety is what makes tiles distinguishable.
-			const cols = Math.max(2, Math.floor(w / (size * 0.022)));
-			const rows = Math.max(3, Math.floor(h / (size * 0.03)));
-			for (let c = 0; c < cols; c++) {
-				for (let r = 0; r < rows; r++) {
-					if (random() < 0.42) continue;
-					ctx.fillStyle = hsl(
-						[46, 32, 190, 58, 12][Math.floor(random() * 5)],
-						95,
-						60 + random() * 18,
-						row === 0 ? 0.55 : 0.95
-					);
-					ctx.fillRect(
-						x + size * 0.008 + c * (w / cols),
-						top + size * 0.012 + r * (h / rows),
-						w / cols - size * 0.008,
-						h / rows - size * 0.012
-					);
-				}
-			}
-			x += w + size * 0.012;
+	const cx = size * 0.5;
+	const cy = size * 0.56;
+	const r = size * 0.3;
+	const fur = '#f2954a';
+	const dark = '#d9752f';
+
+	oval(ctx, cx, size * 1.02, r * 1.25, r * 0.95, 0, fur); // body peeking up
+	pointyEar(ctx, cx - r * 0.72, cy - r * 0.78, r * 0.38, -0.25, fur, '#ffc2c8');
+	pointyEar(ctx, cx + r * 0.72, cy - r * 0.78, r * 0.38, 0.25, fur, '#ffc2c8');
+	oval(ctx, cx, cy, r, r * 0.92, 0, fur);
+
+	// Tabby stripes give the head itself internal detail.
+	ctx.fillStyle = dark;
+	for (let i = -1; i <= 1; i++) {
+		ctx.beginPath();
+		ctx.ellipse(cx + i * r * 0.26, cy - r * 0.72, r * 0.06, r * 0.22, i * 0.25, 0, TAU);
+		ctx.fill();
+	}
+	for (const side of [-1, 1]) {
+		for (let i = 0; i < 3; i++) {
+			oval(ctx, cx + side * r * (0.72 + i * 0.03), cy - r * 0.1 + i * r * 0.22, r * 0.22, r * 0.045, side * 0.2, dark);
 		}
 	}
+
+	eye(ctx, cx - r * 0.36, cy - r * 0.02, r * 0.17);
+	eye(ctx, cx + r * 0.36, cy - r * 0.02, r * 0.17);
+	blush(ctx, cx - r * 0.62, cy + r * 0.3, r * 0.22, 'rgba(255,130,140,0.55)');
+	blush(ctx, cx + r * 0.62, cy + r * 0.3, r * 0.22, 'rgba(255,130,140,0.55)');
+	oval(ctx, cx, cy + r * 0.38, r * 0.3, r * 0.2, 0, '#fff1e4');
+	nose(ctx, cx, cy + r * 0.3, r * 0.08, '#e8697c');
+	smile(ctx, cx, cy + r * 0.44, r * 0.16);
 };
 
-const desertDunes: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#ffd9e8', '#ffb27f', '#ff8f6b', '#f2c14e']);
-	glow(ctx, size * 0.68, size * 0.24, size * 0.07, '#fff8d8', 6);
+const panda: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#d8f1c8', '#a8dd9a', '#6fbf82']);
+	// Bamboo canes: strong vertical structure, so no two tiles line up.
+	for (let i = 0; i < 9; i++) {
+		const x = (i / 9) * size + random() * size * 0.05;
+		ctx.fillStyle = 'rgba(120,190,120,0.5)';
+		ctx.fillRect(x, 0, size * 0.035, size);
+		ctx.fillStyle = 'rgba(80,150,90,0.45)';
+		for (let j = 0; j < 7; j++) ctx.fillRect(x, (j / 7) * size + size * 0.04, size * 0.035, size * 0.012);
+	}
+	scatter(ctx, size, random, 54, (x, y, s, rot) => leaf(ctx, x, y, s * 1.3, rot, 'rgba(60,140,80,0.5)'));
 
-	const hues = [36, 24, 12, 350, 330, 312];
-	hues.forEach((hue, index) => {
-		const depth = index / (hues.length - 1);
-		ctx.fillStyle = hsl(hue, 68 - depth * 12, 72 - depth * 44);
-		ctx.beginPath();
-		ctx.moveTo(0, size);
-		const baseline = size * (0.4 + depth * 0.5);
-		const lift = size * (0.06 + random() * 0.05);
-		ctx.lineTo(0, baseline);
-		// Two bezier humps per band gives the smooth swept edge of a dune.
-		ctx.bezierCurveTo(
-			size * 0.3,
-			baseline - lift,
-			size * 0.45,
-			baseline + lift,
-			size * 0.62,
-			baseline
-		);
-		ctx.bezierCurveTo(size * 0.8, baseline - lift, size * 0.9, baseline + lift * 0.5, size, baseline - lift * 0.3);
-		ctx.lineTo(size, size);
-		ctx.closePath();
-		ctx.fill();
+	const cx = size * 0.5;
+	const cy = size * 0.55;
+	const r = size * 0.3;
 
-		// Wind ripples.
-		ctx.globalAlpha = 0.16;
-		ctx.strokeStyle = hsl(hue, 60, 92);
-		ctx.lineWidth = size * 0.0035;
-		for (let i = 0; i < 14; i++) {
-			const y = baseline + random() * size * 0.1;
+	oval(ctx, cx, size * 1.05, r * 1.3, r, 0, '#ffffff');
+	roundEar(ctx, cx - r * 0.78, cy - r * 0.7, r * 0.27, INK, '#5b5064');
+	roundEar(ctx, cx + r * 0.78, cy - r * 0.7, r * 0.27, INK, '#5b5064');
+	oval(ctx, cx, cy, r, r * 0.94, 0, '#fdfdff');
+
+	oval(ctx, cx - r * 0.38, cy - r * 0.06, r * 0.26, r * 0.3, -0.3, INK);
+	oval(ctx, cx + r * 0.38, cy - r * 0.06, r * 0.26, r * 0.3, 0.3, INK);
+	eye(ctx, cx - r * 0.36, cy - r * 0.04, r * 0.12);
+	eye(ctx, cx + r * 0.36, cy - r * 0.04, r * 0.12);
+	blush(ctx, cx - r * 0.66, cy + r * 0.34, r * 0.2, 'rgba(255,150,160,0.5)');
+	blush(ctx, cx + r * 0.66, cy + r * 0.34, r * 0.2, 'rgba(255,150,160,0.5)');
+	nose(ctx, cx, cy + r * 0.32, r * 0.1, INK);
+	smile(ctx, cx, cy + r * 0.48, r * 0.17);
+};
+
+const fox: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#ffeccc', '#ffcf9b', '#e79a63']);
+	scatter(ctx, size, random, 83, (x, y, s, rot) =>
+		leaf(ctx, x, y, s * 1.4, rot, ['rgba(214,106,52,0.45)', 'rgba(240,170,70,0.45)', 'rgba(170,70,50,0.35)'][Math.floor(random() * 3)])
+	);
+
+	const cx = size * 0.5;
+	const cy = size * 0.55;
+	const r = size * 0.3;
+	const fur = '#ef7f3c';
+
+	oval(ctx, cx, size * 1.04, r * 1.2, r * 0.9, 0, fur);
+	pointyEar(ctx, cx - r * 0.78, cy - r * 0.82, r * 0.42, -0.3, fur, '#3f3440');
+	pointyEar(ctx, cx + r * 0.78, cy - r * 0.82, r * 0.42, 0.3, fur, '#3f3440');
+
+	// Fox head: a wedge rather than a circle, so it does not read as the cat.
+	ctx.fillStyle = fur;
+	ctx.beginPath();
+	ctx.moveTo(cx - r, cy - r * 0.4);
+	ctx.quadraticCurveTo(cx - r * 1.05, cy + r * 0.5, cx, cy + r * 1.05);
+	ctx.quadraticCurveTo(cx + r * 1.05, cy + r * 0.5, cx + r, cy - r * 0.4);
+	ctx.quadraticCurveTo(cx, cy - r * 1.0, cx - r, cy - r * 0.4);
+	ctx.fill();
+
+	ctx.fillStyle = '#fff4e8';
+	ctx.beginPath();
+	ctx.moveTo(cx - r * 0.5, cy + r * 0.05);
+	ctx.quadraticCurveTo(cx - r * 0.55, cy + r * 0.6, cx, cy + r * 1.02);
+	ctx.quadraticCurveTo(cx + r * 0.55, cy + r * 0.6, cx + r * 0.5, cy + r * 0.05);
+	ctx.quadraticCurveTo(cx, cy + r * 0.3, cx - r * 0.5, cy + r * 0.05);
+	ctx.fill();
+
+	eye(ctx, cx - r * 0.38, cy - r * 0.02, r * 0.15);
+	eye(ctx, cx + r * 0.38, cy - r * 0.02, r * 0.15);
+	blush(ctx, cx - r * 0.66, cy + r * 0.28, r * 0.2, 'rgba(255,120,110,0.5)');
+	blush(ctx, cx + r * 0.66, cy + r * 0.28, r * 0.2, 'rgba(255,120,110,0.5)');
+	nose(ctx, cx, cy + r * 0.62, r * 0.1, INK);
+	smile(ctx, cx, cy + r * 0.76, r * 0.15);
+};
+
+const owl: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#2b2a63', '#453a80', '#6b4f9e']);
+	scatter(ctx, size, random, 144, (x, y, s) => star(ctx, x, y, s * 0.6, 'rgba(255,240,190,0.75)'));
+	scatter(ctx, size, random, 29, (x, y, s) => disc(ctx, x, y, s * 0.5, 'rgba(255,255,255,0.3)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.55;
+	const r = size * 0.31;
+
+	oval(ctx, cx, cy + r * 0.25, r * 0.98, r * 1.1, 0, '#a97bd4');
+	oval(ctx, cx, cy + r * 0.55, r * 0.62, r * 0.7, 0, '#d8bdf0');
+
+	// Tufts.
+	pointyEar(ctx, cx - r * 0.6, cy - r * 0.82, r * 0.3, -0.35, '#a97bd4', '#c79ce6');
+	pointyEar(ctx, cx + r * 0.6, cy - r * 0.82, r * 0.3, 0.35, '#a97bd4', '#c79ce6');
+
+	// Wings, with scalloped feathers for close-up detail.
+	for (const side of [-1, 1]) {
+		oval(ctx, cx + side * r * 0.85, cy + r * 0.4, r * 0.26, r * 0.55, side * 0.25, '#8f63c2');
+		ctx.fillStyle = 'rgba(255,255,255,0.28)';
+		for (let i = 0; i < 4; i++) {
 			ctx.beginPath();
-			ctx.moveTo(random() * size, y);
-			ctx.lineTo(random() * size * 0.4 + size * 0.2, y + size * 0.006);
+			ctx.arc(cx + side * r * 0.85, cy + r * (0.05 + i * 0.22), r * 0.18, 0, Math.PI);
+			ctx.fill();
+		}
+	}
+
+	for (const side of [-1, 1]) {
+		disc(ctx, cx + side * r * 0.36, cy - r * 0.08, r * 0.3, '#fff6e2');
+		eye(ctx, cx + side * r * 0.36, cy - r * 0.08, r * 0.19);
+	}
+	ctx.fillStyle = '#f5b13f';
+	ctx.beginPath();
+	ctx.moveTo(cx - r * 0.12, cy + r * 0.2);
+	ctx.lineTo(cx + r * 0.12, cy + r * 0.2);
+	ctx.lineTo(cx, cy + r * 0.52);
+	ctx.closePath();
+	ctx.fill();
+	blush(ctx, cx - r * 0.72, cy + r * 0.12, r * 0.18, 'rgba(255,150,170,0.5)');
+	blush(ctx, cx + r * 0.72, cy + r * 0.12, r * 0.18, 'rgba(255,150,170,0.5)');
+};
+
+const bunny: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#e8fbe6', '#c4f0d8', '#96dcc4']);
+	scatter(ctx, size, random, 64, (x, y, s, rot) => leaf(ctx, x, y, s, rot, 'rgba(90,180,140,0.45)'));
+	scatter(ctx, size, random, 42, (x, y, s) => heart(ctx, x, y, s * 0.7, 'rgba(255,160,180,0.45)'));
+	scatter(ctx, size, random, 32, (x, y, s) => disc(ctx, x, y, s * 0.35, 'rgba(255,255,255,0.6)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.6;
+	const r = size * 0.27;
+
+	oval(ctx, cx, size * 1.06, r * 1.25, r, 0, '#fffdfd');
+	for (const side of [-1, 1]) {
+		oval(ctx, cx + side * r * 0.42, cy - r * 1.05, r * 0.19, r * 0.6, side * 0.16, '#fffdfd');
+		oval(ctx, cx + side * r * 0.42, cy - r * 1.05, r * 0.1, r * 0.44, side * 0.16, '#ffc4d2');
+	}
+	oval(ctx, cx, cy, r, r * 0.94, 0, '#fffdfd');
+
+	eye(ctx, cx - r * 0.36, cy - r * 0.04, r * 0.16);
+	eye(ctx, cx + r * 0.36, cy - r * 0.04, r * 0.16);
+	blush(ctx, cx - r * 0.64, cy + r * 0.3, r * 0.22, 'rgba(255,140,160,0.6)');
+	blush(ctx, cx + r * 0.64, cy + r * 0.3, r * 0.22, 'rgba(255,140,160,0.6)');
+	nose(ctx, cx, cy + r * 0.3, r * 0.09, '#f2849b');
+	smile(ctx, cx, cy + r * 0.44, r * 0.15);
+	// Whiskers.
+	ctx.strokeStyle = 'rgba(70,60,80,0.45)';
+	ctx.lineWidth = size * 0.004;
+	for (const side of [-1, 1]) {
+		for (let i = -1; i <= 1; i++) {
+			ctx.beginPath();
+			ctx.moveTo(cx + side * r * 0.2, cy + r * 0.36 + i * r * 0.06);
+			ctx.lineTo(cx + side * r * 0.85, cy + r * 0.28 + i * r * 0.16);
 			ctx.stroke();
 		}
-		ctx.globalAlpha = 1;
-	});
-
-	// Smooth gradient dunes alone leave several tiles nearly identical, so the
-	// foreground gets landmarks: cacti, and pebbles catching the low sun.
-	for (let i = 0; i < 5; i++) {
-		const x = size * (0.08 + random() * 0.84);
-		const y = size * (0.72 + random() * 0.2);
-		const h = size * (0.07 + random() * 0.07);
-		const w = h * 0.22;
-		ctx.fillStyle = hsl(150, 32, 26);
-		ctx.beginPath();
-		ctx.roundRect(x - w / 2, y - h, w, h, w / 2);
-		ctx.fill();
-		// One arm each side, at different heights, so they are not clones.
-		for (const side of [-1, 1]) {
-			const armY = y - h * (0.45 + random() * 0.25);
-			const armW = h * 0.3;
-			ctx.beginPath();
-			ctx.roundRect(x + side * armW - w / 2, armY, armW + w / 2, w * 0.8, w / 2);
-			ctx.fill();
-			ctx.beginPath();
-			ctx.roundRect(x + side * armW - w / 2, armY - h * 0.22, w * 0.8, h * 0.28, w / 2);
-			ctx.fill();
-		}
-	}
-
-	for (let i = 0; i < 90; i++) {
-		const y = size * (0.55 + random() * 0.45);
-		ctx.fillStyle = hsl(20 + random() * 26, 45, random() < 0.5 ? 34 : 82, 0.5);
-		ctx.beginPath();
-		ctx.ellipse(random() * size, y, size * 0.005, size * 0.003, 0, 0, Math.PI * 2);
-		ctx.fill();
 	}
 };
 
-const citrusGrove: Painting['paint'] = (ctx, size, random) => {
-	sky(ctx, size, ['#0f5f4a', '#14795a', '#1c9366']);
+const frog: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#d6f6ef', '#8fdcd0', '#4fb3a8']);
+	// Lily pads.
+	for (let i = 0; i < 12; i++) {
+		const x = random() * size;
+		const y = random() * size;
+		const r = size * (0.05 + random() * 0.06);
+		ctx.fillStyle = 'rgba(70,165,120,0.5)';
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0.35, TAU);
+		ctx.closePath();
+		ctx.fill();
+	}
+	scatter(ctx, size, random, 64, (x, y, s) => bubble(ctx, x, y, s * 0.7, 'rgba(255,255,255,0.6)'));
 
-	// A canopy of fruit and leaves filling the whole frame — no empty ground,
-	// no empty sky, which makes every tile carry something.
-	for (let layer = 0; layer < 3; layer++) {
-		const count = 40 + layer * 30;
-		for (let i = 0; i < count; i++) {
-			const x = random() * size;
-			const y = random() * size;
-			const r = size * (0.02 + random() * 0.05) * (1 - layer * 0.2);
-			const leaf = random() < 0.55;
+	const cx = size * 0.5;
+	const cy = size * 0.6;
+	const r = size * 0.3;
+	const skin = '#7ac74f';
 
-			if (leaf) {
-				ctx.fillStyle = hsl(96 + random() * 40, 60 + random() * 25, 30 + random() * 30);
-				ctx.save();
-				ctx.translate(x, y);
-				ctx.rotate(random() * Math.PI);
-				ctx.beginPath();
-				ctx.ellipse(0, 0, r, r * 0.45, 0, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.restore();
-			} else {
-				const hue = [32, 46, 12, 58][Math.floor(random() * 4)];
-				ctx.fillStyle = hsl(hue, 92, 58);
-				ctx.beginPath();
-				ctx.arc(x, y, r * 0.72, 0, Math.PI * 2);
-				ctx.fill();
-				// A highlight turns a flat circle into fruit.
-				ctx.fillStyle = hsl(hue + 8, 95, 76, 0.8);
-				ctx.beginPath();
-				ctx.arc(x - r * 0.22, y - r * 0.24, r * 0.26, 0, Math.PI * 2);
-				ctx.fill();
-			}
+	oval(ctx, cx, cy + r * 0.3, r * 1.05, r * 0.85, 0, skin);
+	oval(ctx, cx, cy + r * 0.55, r * 0.62, r * 0.42, 0, '#d9f2a8');
+	for (const side of [-1, 1]) {
+		disc(ctx, cx + side * r * 0.56, cy - r * 0.55, r * 0.3, skin);
+		disc(ctx, cx + side * r * 0.56, cy - r * 0.58, r * 0.22, '#ffffff');
+		eye(ctx, cx + side * r * 0.56, cy - r * 0.58, r * 0.13);
+	}
+	// Spots, so the body is not one flat green field.
+	ctx.fillStyle = 'rgba(60,140,60,0.5)';
+	for (let i = 0; i < 9; i++) {
+		const angle = random() * TAU;
+		const d = random() * r * 0.8;
+		ctx.beginPath();
+		ctx.ellipse(cx + Math.cos(angle) * d, cy + r * 0.2 + Math.sin(angle) * d * 0.5, r * 0.1, r * 0.07, angle, 0, TAU);
+		ctx.fill();
+	}
+	blush(ctx, cx - r * 0.7, cy + r * 0.2, r * 0.2, 'rgba(255,140,150,0.5)');
+	blush(ctx, cx + r * 0.7, cy + r * 0.2, r * 0.2, 'rgba(255,140,150,0.5)');
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = size * 0.009;
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	ctx.arc(cx, cy + r * 0.15, r * 0.42, 0.2 * Math.PI, 0.8 * Math.PI);
+	ctx.stroke();
+};
+
+const penguin: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#e8f6ff', '#b9e0f7', '#79b6e6']);
+	scatter(ctx, size, random, 96, (x, y, s) => flake(ctx, x, y, s * 0.8, 'rgba(255,255,255,0.85)'));
+	scatter(ctx, size, random, 38, (x, y, s) => disc(ctx, x, y, s * 0.3, 'rgba(255,255,255,0.7)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.56;
+	const r = size * 0.3;
+
+	oval(ctx, cx, cy + r * 0.3, r * 0.92, r * 1.12, 0, '#2f3a52');
+	oval(ctx, cx, cy + r * 0.42, r * 0.62, r * 0.88, 0, '#fdfdff');
+	for (const side of [-1, 1]) {
+		oval(ctx, cx + side * r * 0.92, cy + r * 0.35, r * 0.2, r * 0.6, side * 0.3, '#2f3a52');
+		oval(ctx, cx + side * r * 0.35, cy + r * 1.35, r * 0.24, r * 0.12, 0, '#f5a93f');
+	}
+	eye(ctx, cx - r * 0.28, cy - r * 0.16, r * 0.15);
+	eye(ctx, cx + r * 0.28, cy - r * 0.16, r * 0.15);
+	ctx.fillStyle = '#f5a93f';
+	ctx.beginPath();
+	ctx.moveTo(cx - r * 0.16, cy + r * 0.08);
+	ctx.lineTo(cx + r * 0.16, cy + r * 0.08);
+	ctx.lineTo(cx, cy + r * 0.32);
+	ctx.closePath();
+	ctx.fill();
+	blush(ctx, cx - r * 0.55, cy + r * 0.06, r * 0.18, 'rgba(255,150,160,0.55)');
+	blush(ctx, cx + r * 0.55, cy + r * 0.06, r * 0.18, 'rgba(255,150,160,0.55)');
+};
+
+const bear: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#fff2c9', '#ffd98a', '#f0ad57']);
+	scatter(ctx, size, random, 48, (x, y, s) => {
+		// Honeycomb cells.
+		ctx.strokeStyle = 'rgba(214,150,50,0.5)';
+		ctx.lineWidth = s * 0.18;
+		ctx.beginPath();
+		for (let i = 0; i < 6; i++) {
+			const angle = (i / 6) * TAU;
+			ctx.lineTo(x + Math.cos(angle) * s, y + Math.sin(angle) * s);
+		}
+		ctx.closePath();
+		ctx.stroke();
+	});
+	scatter(ctx, size, random, 32, (x, y, s) => heart(ctx, x, y, s * 0.6, 'rgba(230,130,80,0.35)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.56;
+	const r = size * 0.3;
+	const fur = '#b07a4e';
+
+	oval(ctx, cx, size * 1.05, r * 1.3, r, 0, fur);
+	roundEar(ctx, cx - r * 0.76, cy - r * 0.72, r * 0.26, fur, '#e0a878');
+	roundEar(ctx, cx + r * 0.76, cy - r * 0.72, r * 0.26, fur, '#e0a878');
+	oval(ctx, cx, cy, r, r * 0.95, 0, fur);
+	oval(ctx, cx, cy + r * 0.4, r * 0.46, r * 0.32, 0, '#f0d3b0');
+
+	eye(ctx, cx - r * 0.36, cy - r * 0.06, r * 0.15);
+	eye(ctx, cx + r * 0.36, cy - r * 0.06, r * 0.15);
+	blush(ctx, cx - r * 0.66, cy + r * 0.26, r * 0.22, 'rgba(230,120,110,0.5)');
+	blush(ctx, cx + r * 0.66, cy + r * 0.26, r * 0.22, 'rgba(230,120,110,0.5)');
+	nose(ctx, cx, cy + r * 0.3, r * 0.11, INK);
+	smile(ctx, cx, cy + r * 0.46, r * 0.16);
+};
+
+const axolotl: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#ffe9f4', '#ffc7e2', '#e79ccb']);
+	scatter(ctx, size, random, 86, (x, y, s) => bubble(ctx, x, y, s * 0.8, 'rgba(255,255,255,0.7)'));
+	scatter(ctx, size, random, 35, (x, y, s) => star(ctx, x, y, s * 0.5, 'rgba(255,255,255,0.5)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.56;
+	const r = size * 0.29;
+	const skin = '#ffb3d9';
+
+	// Frilly gills: six branches, the signature detail. They have to reach well
+	// past the head or the head oval swallows them and this is just a pink blob.
+	for (const side of [-1, 1]) {
+		for (let i = 0; i < 3; i++) {
+			const angle = side * (0.62 + i * 0.42);
+			const reach = r * (1.5 - i * 0.12);
+			const gx = cx + Math.sin(angle) * reach;
+			const gy = cy - Math.cos(angle) * reach * 0.82;
+			ctx.strokeStyle = '#ff7fb8';
+			ctx.lineWidth = r * 0.09;
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			ctx.moveTo(cx + Math.sin(angle) * r * 0.8, cy - Math.cos(angle) * r * 0.6);
+			ctx.lineTo(gx, gy);
+			ctx.stroke();
+			disc(ctx, gx, gy, r * 0.2, '#ff9ecb');
+			disc(ctx, gx + Math.sin(angle) * r * 0.16, gy - r * 0.14, r * 0.13, '#ffbcdd');
 		}
 	}
+
+	oval(ctx, cx, size * 1.05, r * 1.2, r * 0.9, 0, skin);
+	oval(ctx, cx, cy, r, r * 0.86, 0, skin);
+	eye(ctx, cx - r * 0.42, cy - r * 0.02, r * 0.13);
+	eye(ctx, cx + r * 0.42, cy - r * 0.02, r * 0.13);
+	blush(ctx, cx - r * 0.62, cy + r * 0.3, r * 0.22, 'rgba(255,110,160,0.55)');
+	blush(ctx, cx + r * 0.62, cy + r * 0.3, r * 0.22, 'rgba(255,110,160,0.55)');
+	smile(ctx, cx, cy + r * 0.34, r * 0.18);
+};
+
+const chick: Painting['paint'] = (ctx, size, random) => {
+	wash(ctx, size, ['#f2fbff', '#cdeaff', '#9ec9f0']);
+	scatter(ctx, size, random, 74, (x, y, s, rot) => leaf(ctx, x, y, s * 0.9, rot, 'rgba(255,214,110,0.6)'));
+	scatter(ctx, size, random, 45, (x, y, s) => disc(ctx, x, y, s * 0.3, 'rgba(255,255,255,0.75)'));
+	scatter(ctx, size, random, 26, (x, y, s) => heart(ctx, x, y, s * 0.6, 'rgba(255,170,90,0.4)'));
+
+	const cx = size * 0.5;
+	const cy = size * 0.55;
+	const r = size * 0.29;
+	const down = '#ffd447';
+
+	oval(ctx, cx, cy + r * 0.55, r * 1.0, r * 0.9, 0, down);
+	oval(ctx, cx, cy, r * 0.88, r * 0.82, 0, down);
+	// A wisp of head-down and a wing, so the yellow is not one flat mass.
+	ctx.strokeStyle = '#f5b91f';
+	ctx.lineWidth = r * 0.075;
+	ctx.lineCap = 'round';
+	for (const [lean, height] of [[-0.55, 0.3], [0, 0.4], [0.55, 0.3]] as const) {
+		ctx.beginPath();
+		ctx.moveTo(cx, cy - r * 0.76);
+		ctx.quadraticCurveTo(
+			cx + lean * r * 0.34,
+			cy - r * (0.76 + height * 0.6),
+			cx + lean * r * 0.52,
+			cy - r * (0.76 + height)
+		);
+		ctx.stroke();
+	}
+	oval(ctx, cx - r * 0.72, cy + r * 0.55, r * 0.3, r * 0.42, -0.3, '#f5b91f');
+
+	eye(ctx, cx - r * 0.3, cy - r * 0.06, r * 0.14);
+	eye(ctx, cx + r * 0.3, cy - r * 0.06, r * 0.14);
+	ctx.fillStyle = '#f08a2e';
+	ctx.beginPath();
+	ctx.moveTo(cx - r * 0.15, cy + r * 0.2);
+	ctx.lineTo(cx + r * 0.15, cy + r * 0.2);
+	ctx.lineTo(cx, cy + r * 0.44);
+	ctx.closePath();
+	ctx.fill();
+	blush(ctx, cx - r * 0.56, cy + r * 0.18, r * 0.19, 'rgba(255,140,150,0.55)');
+	blush(ctx, cx + r * 0.56, cy + r * 0.18, r * 0.19, 'rgba(255,140,150,0.55)');
 };
 
 export const GALLERY: readonly Painting[] = [
-	{ id: 'sunset-hills', title: 'Sunset Hills', paint: sunsetHills },
-	{ id: 'aurora', title: 'Aurora', paint: aurora },
-	{ id: 'balloon-sky', title: 'Balloon Sky', paint: balloonSky },
-	{ id: 'flower-field', title: 'Flower Field', paint: flowerField },
-	{ id: 'ocean-sunrise', title: 'Ocean Sunrise', paint: oceanSunrise },
-	{ id: 'rainbow-arcs', title: 'Rainbow Arcs', paint: rainbowArcs },
-	{ id: 'night-city', title: 'Night City', paint: nightCity },
-	{ id: 'desert-dunes', title: 'Desert Dunes', paint: desertDunes },
-	{ id: 'citrus-grove', title: 'Citrus Grove', paint: citrusGrove }
+	{ id: 'cat', title: 'Tabby Cat', paint: cat },
+	{ id: 'panda', title: 'Panda', paint: panda },
+	{ id: 'fox', title: 'Little Fox', paint: fox },
+	{ id: 'owl', title: 'Night Owl', paint: owl },
+	{ id: 'bunny', title: 'Bunny', paint: bunny },
+	{ id: 'frog', title: 'Pond Frog', paint: frog },
+	{ id: 'penguin', title: 'Penguin', paint: penguin },
+	{ id: 'bear', title: 'Honey Bear', paint: bear },
+	{ id: 'axolotl', title: 'Axolotl', paint: axolotl },
+	{ id: 'chick', title: 'Little Chick', paint: chick }
 ];
 
 export function paintingById(id: string): Painting {
@@ -559,16 +698,18 @@ export function renderPainting(painting: Painting, size = 900): string {
 	canvas.height = size;
 	const ctx = canvas.getContext('2d')!;
 
-	// Seeded from the id, so a painting looks the same every time it is drawn.
-	painting.paint(ctx, size, seeded(hashString(painting.id)));
+	// Seeded from the id, so a picture looks the same every time it is drawn.
+	const random = seeded(hashString(painting.id));
+	painting.paint(ctx, size, random);
 
-	applyCanvasGrain(ctx, size, size, 7);
+	depthWash(ctx, size, random);
+	applyCanvasGrain(ctx, size, size, 6);
 	return canvas.toDataURL('image/webp', 0.9);
 }
 
 /**
- * A light paper grain. Applied to gallery paintings and to uploaded photos
- * alike — it is most of what makes a phone snapshot sit next to the painted art.
+ * A light paper grain. Applied to gallery pictures and to uploaded photos
+ * alike — it is most of what makes a phone snapshot sit next to the drawn art.
  */
 export function applyCanvasGrain(
 	ctx: CanvasRenderingContext2D,
