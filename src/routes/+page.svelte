@@ -97,9 +97,8 @@
 
 		<div class="worlds">
 			{#each WORLDS as world (world.id)}
-				{@const open = progress.isWorldOpen(world.id)}
 				{@const pieces = progress.piecesIn(world.id)}
-				<article class="world" class:locked={!open} style="--hue: {world.hue}">
+				<article class="world" style="--hue: {world.hue}">
 					<h3>
 						<span class="world-mark" aria-hidden="true">
 							<HugeiconsIcon
@@ -111,7 +110,7 @@
 						</span>
 						{world.title}
 					</h3>
-					<p class="flavour">{open ? world.flavour : 'Not yet.'}</p>
+					<p class="flavour">{world.flavour}</p>
 
 					<div class="pips" aria-label="{pieces} of {LEVELS_PER_WORLD} solved">
 						{#each Array.from({ length: LEVELS_PER_WORLD }) as _, level}
@@ -119,21 +118,17 @@
 						{/each}
 					</div>
 
-					{#if open}
-						<div class="row levels">
-							{#each Array.from({ length: LEVELS_PER_WORLD }) as _, level}
-								<a
-									class="level"
-									class:done={progress.isSolved(world.id, level)}
-									href="{base}/play?world={world.id}&level={level}"
-								>
-									{level + 1}
-								</a>
-							{/each}
-						</div>
-					{:else}
-						<p class="muted">Earn a piece in {WORLDS[WORLDS.findIndex((w) => w.id === world.id) - 1].title} first.</p>
-					{/if}
+					<div class="row levels">
+						{#each Array.from({ length: LEVELS_PER_WORLD }) as _, level}
+							<a
+								class="level"
+								class:done={progress.isSolved(world.id, level)}
+								href="{base}/play?world={world.id}&level={level}"
+							>
+								{level + 1}
+							</a>
+						{/each}
+					</div>
 				</article>
 			{/each}
 		</div>
@@ -309,14 +304,9 @@
 		transition: transform 0.35s var(--ease-spring), box-shadow 0.35s var(--ease-out);
 	}
 
-	.world:hover:not(.locked) {
+	.world:hover {
 		transform: translateY(-4px);
 		box-shadow: var(--shadow-lift);
-	}
-
-	.world.locked {
-		opacity: 0.5;
-		filter: saturate(0.35);
 	}
 
 	h3 {
@@ -338,12 +328,6 @@
 		color: hsl(var(--hue) 55% 42%);
 		background: hsl(var(--hue) 70% 93%);
 		box-shadow: inset 0 0 0 1px hsl(var(--hue) 50% 78%);
-	}
-
-	.world.locked .world-mark {
-		color: var(--ink);
-		background: hsl(var(--hue) 12% 90%);
-		box-shadow: none;
 	}
 
 	.pips {

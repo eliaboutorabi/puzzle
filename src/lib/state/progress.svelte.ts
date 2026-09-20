@@ -58,13 +58,6 @@ class Progress {
 		return WORLDS.length * LEVELS_PER_WORLD;
 	}
 
-	/** A world opens once the one before it has given up a single piece. */
-	isWorldOpen(world: WorldId): boolean {
-		const index = WORLDS.findIndex((entry) => entry.id === world);
-		if (index <= 0) return true;
-		return this.piecesIn(WORLDS[index - 1].id) > 0;
-	}
-
 	/** Returns true when this run beat the stored record (or set the first one). */
 	complete(world: WorldId, level: number, moves: number, time: number): boolean {
 		const key = levelKey(world, level);
