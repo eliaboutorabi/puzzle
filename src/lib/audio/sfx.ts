@@ -72,7 +72,9 @@ function startMusic(): void {
 	musicSource.connect(musicGain);
 	musicSource.start();
 	musicGain.gain.cancelScheduledValues(context.currentTime);
-	musicGain.gain.linearRampToValueAtTime(0.28, context.currentTime + 2);
+	// The light theme carries about half the energy of the old one, so this is
+	// raised to match: same perceived level, lighter timbre.
+	musicGain.gain.linearRampToValueAtTime(0.45, context.currentTime + 2);
 }
 
 function stopMusic(): void {
@@ -126,40 +128,58 @@ function reversed(ctx: BaseAudioContext, buffer: AudioBuffer): AudioBuffer {
 }
 
 /**
- * A slow, warm, slightly out-of-tune loop. Rendered once offline so playback
- * costs nothing and the reversed copy is sample-accurate.
+ * A light, airy loop. Rendered once offline so playback costs nothing and the
+ * reversed copy is sample-accurate.
+ *
+ * Deliberately brighter than a dusk theme would be: the melody sits an octave
+ * up, the filter is opened so the tone keeps its air rather than being muffled,
+ * and the old sub-bass drone is replaced by a soft mid pad that supports the
+ * tune without sitting on top of it.
  */
 async function renderTheme(ctx: AudioContext): Promise<AudioBuffer> {
 	const seconds = 24;
 	const offline = new OfflineAudioContext(2, ctx.sampleRate * seconds, ctx.sampleRate);
 
 	const bus = offline.createGain();
-	bus.gain.value = 0.5;
+	bus.gain.value = 0.42;
 
-	// A gentle low-pass keeps the sines from sounding like a hearing test.
-	const warmth = offline.createBiquadFilter();
-	warmth.type = 'lowpass';
-	warmth.frequency.value = 1800;
-	warmth.Q.value = 0.4;
-	bus.connect(warmth);
-	warmth.connect(offline.destination);
+	// Opened up. A low cutoff is what makes a synth sound heavy, and this theme
+	// wants the opposite.
+	const air = offline.createBiquadFilter();
+	air.type = 'lowpass';
+	air.frequency.value = 3600;
+	air.Q.value = 0.3;
+	bus.connect(air);
+	air.connect(offline.destination);
 
-	const root = 196; // G3
-	const random = seeded(20240816);
+	const root = 392; // G4 — an octave above the old theme
+	const random = seeded(20260921);
 
-	// Slow arpeggio, one note every 750ms, occasionally an octave up.
-	for (let beat = 0; beat * 0.75 < seconds; beat++) {
-		const at = beat * 0.75;
+	// Melody: quicker and higher, with occasional rests so it breathes rather
+	// than marching.
+	for (let beat = 0; beat * 0.5 < seconds; beat++) {
+		const at = beat * 0.5;
+		if (random() < 0.14) continue;
 		const degree = SCALE[Math.floor(random() * SCALE.length)];
-		const octave = random() < 0.22 ? 12 : 0;
-		pluck(offline, bus, root * Math.pow(2, (degree + octave) / 12), at, 1.9, 0.16);
+		const octave = random() < 0.28 ? 12 : 0;
+		pluck(offline, bus, root * Math.pow(2, (degree + octave) / 12), at, 1.1, 0.11);
 	}
 
-	// A drone underneath, drifting between the tonic and the fifth.
-	for (let bar = 0; bar * 6 < seconds; bar++) {
-		const at = bar * 6;
-		const frequency = bar % 2 === 0 ? root / 2 : (root / 2) * Math.pow(2, 7 / 12);
-		pluck(offline, bus, frequency, at, 6.5, 0.1, 'triangle');
+	// Sparse twinkles well above the melody.
+	for (let i = 0; i < 30; i++) {
+		const at = random() * (seconds - 1);
+		const degree = SCALE[Math.floor(random() * SCALE.length)];
+		pluck(offline, bus, root * 2 * Math.pow(2, degree / 12), at, 0.6, 0.045);
+	}
+
+	// A soft pad where the drone used to be: present, never heavy, drifting
+	// through a few gentle changes so the loop does not feel static.
+	const changes = [0, 5, 7, 4];
+	for (let bar = 0; bar * 4 < seconds; bar++) {
+		const at = bar * 4;
+		const base = (root / 2) * Math.pow(2, changes[bar % changes.length] / 12);
+		pluck(offline, bus, base, at, 4.4, 0.06, 'triangle');
+		pluck(offline, bus, base * Math.pow(2, 7 / 12), at + 0.15, 4.2, 0.038, 'triangle');
 	}
 
 	return offline.startRendering();
